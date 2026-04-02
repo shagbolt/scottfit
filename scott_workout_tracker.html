@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Scott.Fit</title>
+
+<!-- ── PWA / Add to Home Screen (Safari) ── -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Scott.Fit">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0f0d" id="themeColorMeta">
+
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── DARK theme (default) ── */
+:root,[data-theme="dark"] {
+  --bg:#0f0f0d; --surface:#1a1a16; --surface2:#242420; --surface3:#2e2e28;
+  --accent:#d4f060; --accent2:#f0a030; --accent3:#60c4f0;
+  --text:#e8e8e0; --muted:#888882; --border:#2e2e28; --red:#f05050;
+  --noise-opacity:.18;
+  --logo-dot-color:#d4f060;
+}
+/* ── LIGHT theme ── */
+[data-theme="light"] {
+  --bg:#f4f4f0; --surface:#ffffff; --surface2:#eeeee8; --surface3:#e0e0d8;
+  --accent:#5a8a00; --accent2:#c07000; --accent3:#0070a8;
+  --text:#1a1a14; --muted:#888878; --border:#d0d0c4; --red:#cc2020;
+  --noise-opacity:.06;
+  --logo-dot-color:#5a8a00;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+*,*::before,*::after{transition:background-color .25s,border-color .25s,color .25s;}
+/* don't animate transforms or opacity (breaks chevron, toast etc) */
+.chevron,.toast,.modal-overlay,.btn{transition:background-color .25s,border-color .25s,color .25s,transform .2s,opacity .3s;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;min-height:-webkit-fill-available;}
+/* Safe area for iPhone notch / home bar */
+header{padding-top:max(1.2rem,env(safe-area-inset-top));}
+.main{padding-bottom:max(1.2rem,env(safe-area-inset-bottom));}
+.toast{bottom:max(1.4rem,calc(env(safe-area-inset-bottom) + 0.8rem));right:max(1.4rem,env(safe-area-inset-right));}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:var(--noise-opacity);
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");}
+header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;justify-content:space-between;gap:.8rem;flex-wrap:wrap;}
+.logo{font-family:'Bebas Neue',cursive;font-size:clamp(1.8rem,5vw,3.2rem);letter-spacing:.05em;line-height:1;}
+.logo span{color:var(--accent);}
+.date-badge{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+.header-btns{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;}
+.main{max-width:860px;margin:0 auto;padding:1.2rem 1.5rem;}
+.btn{font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;padding:.5rem 1rem;border-radius:4px;border:none;cursor:pointer;transition:all .15s;letter-spacing:.02em;}
+.btn-primary{background:var(--accent);color:#0f0f0d;}
+.btn-primary:hover{background:#c8e850;transform:translateY(-1px);}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--text);color:var(--text);}
+.btn-orange{background:transparent;color:var(--accent2);border:1px solid var(--accent2);}
+.btn-orange:hover{background:rgba(240,160,48,.1);}
+.btn-blue{background:transparent;color:var(--accent3);border:1px solid var(--accent3);}
+.btn-blue:hover{background:rgba(96,196,240,.1);}
+.btn-danger{background:transparent;color:var(--red);border:1px solid transparent;padding:.22rem .45rem;font-size:.72rem;cursor:pointer;}
+.btn-danger:hover{background:rgba(240,80,80,.1);}
+.btn-sm{padding:.3rem .65rem;font-size:.75rem;}
+.add-set-btn{margin-top:.5rem;font-size:.72rem;color:var(--accent);background:none;border:1px dashed rgba(212,240,96,.3);border-radius:3px;padding:.28rem .7rem;cursor:pointer;width:100%;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.add-set-btn:hover{background:rgba(212,240,96,.05);border-color:var(--accent);}
+
+/* Stats strip */
+.stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:1.4rem;}
+.stat{background:var(--surface);padding:.8rem;text-align:center;}
+.stat-value{font-family:'Bebas Neue',cursive;font-size:1.9rem;color:var(--accent);line-height:1;}
+.stat-label{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:.2rem;}
+
+/* Session bar */
+.session-bar{display:flex;gap:.75rem;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;}
+.session-bar label{font-size:.78rem;color:var(--muted);}
+.session-bar input[type="date"]{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:.82rem;padding:.45rem .8rem;border-radius:4px;cursor:pointer;}
+.session-bar input[type="date"]:focus{outline:none;border-color:var(--accent);}
+
+/* Last-session banner */
+.last-session-bar{display:flex;align-items:center;gap:.6rem;margin-bottom:1.3rem;flex-wrap:wrap;padding:.55rem .75rem;background:rgba(96,196,240,.07);border:1px solid rgba(96,196,240,.2);border-radius:5px;}
+.last-session-bar label{font-size:.75rem;color:var(--accent3);}
+.last-session-bar select{background:var(--surface2);border:1px solid rgba(96,196,240,.25);color:var(--text);font-family:'DM Mono',monospace;font-size:.75rem;padding:.3rem .5rem;border-radius:4px;cursor:pointer;max-width:180px;}
+.last-session-bar select:focus{outline:none;border-color:var(--accent3);}
+.last-session-bar .hint{font-size:.68rem;color:var(--muted);font-family:'DM Mono',monospace;}
+
+.section-label{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:.65rem;padding-bottom:.35rem;border-bottom:1px solid var(--border);}
+.exercise-section{margin-bottom:1.8rem;}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem;padding-bottom:.35rem;border-bottom:1px solid var(--border);}
+.section-header .section-label{margin:0;border:none;padding:0;}
+
+/* Cards */
+.exercise-card,.checklist-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:.6rem;overflow:hidden;transition:border-color .2s;}
+.exercise-header{display:flex;align-items:center;gap:.65rem;padding:.65rem .9rem;cursor:pointer;user-select:none;}
+.exercise-header:hover{background:var(--surface2);}
+.exercise-name{font-size:.92rem;font-weight:500;flex:1;}
+.exercise-meta{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);}
+.chevron{color:var(--muted);font-size:.72rem;transition:transform .2s;flex-shrink:0;}
+.exercise-card.open>.exercise-header .chevron,.checklist-card.open>.exercise-header .chevron{transform:rotate(180deg);}
+.exercise-body{display:none;padding:.2rem .9rem .85rem;border-top:1px solid var(--border);}
+.exercise-card.open>.exercise-body,.checklist-card.open>.exercise-body{display:block;}
+
+/* Custom exercise header actions */
+.ex-header-actions{display:flex;gap:.3rem;align-items:center;flex-shrink:0;}
+
+/* Machine settings badge */
+.machine-settings{display:flex;flex-wrap:wrap;gap:.4rem;margin:.55rem 0 .2rem;}
+.setting-pill{display:inline-flex;align-items:center;gap:.3rem;background:rgba(240,160,48,.09);border:1px solid rgba(240,160,48,.22);border-radius:3px;padding:.18rem .55rem;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--accent2);}
+.setting-pill .pill-label{color:var(--muted);}
+
+/* Sets table */
+.sets-table{width:100%;border-collapse:collapse;margin-top:.6rem;font-size:.83rem;}
+.sets-table th{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:.32rem .45rem;border-bottom:1px solid var(--border);}
+.sets-table td{padding:.28rem .45rem;}
+.sets-table tbody tr:hover td{background:var(--surface2);}
+.set-num{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);width:26px;}
+.sets-table input[type="number"]{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-family:'DM Mono',monospace;font-size:.83rem;width:66px;padding:.13rem .22rem;transition:border-color .15s;}
+.sets-table input[type="number"]:focus{outline:none;border-bottom-color:var(--accent);}
+.bw-label{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--muted);font-style:italic;}
+.last-wt{font-family:'DM Mono',monospace;font-size:.62rem;color:rgba(212,240,96,.45);padding-left:.2rem;}
+
+/* Cardio */
+.cardio-fields{display:flex;gap:1rem;margin-top:.7rem;flex-wrap:wrap;}
+.cardio-field{display:flex;flex-direction:column;gap:.28rem;}
+.cardio-field label{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.cardio-field input{background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Mono',monospace;font-size:.95rem;padding:.42rem .65rem;width:105px;transition:border-color .15s;}
+.cardio-field input:focus{outline:none;border-color:var(--accent);}
+
+/* Checklist */
+.check-list{padding:.4rem 0;}
+.check-item{display:flex;align-items:center;gap:.7rem;padding:.5rem .2rem;cursor:pointer;border-radius:4px;transition:background .1s;}
+.check-item:hover{background:var(--surface2);}
+.check-item input[type="checkbox"]{display:none;}
+.check-box{width:21px;height:21px;border:2px solid var(--border);border-radius:4px;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:.82rem;}
+.check-item input[type="checkbox"]:checked~.check-box{background:var(--accent);border-color:var(--accent);}
+.check-item input[type="checkbox"]:checked~.check-box::after{content:'✓';font-weight:700;color:#0f0f0d;}
+.check-item input[type="checkbox"]:checked~.check-label{color:var(--muted);text-decoration:line-through;}
+.check-label{font-size:.88rem;color:var(--text);}
+.check-label em{font-style:normal;color:var(--muted);font-size:.78rem;}
+
+/* Exercise instruction */
+.exercise-instruction{display:inline-flex;align-items:center;gap:.32rem;background:rgba(212,240,96,.07);border:1px solid rgba(212,240,96,.18);border-radius:3px;padding:.28rem .6rem;margin:.55rem 0 .1rem;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--accent);letter-spacing:.04em;}
+.exercise-instruction .dot{color:var(--accent2);}
+
+.notes-area{margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border);}
+.notes-area textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.76rem;padding:.42rem .55rem;resize:none;height:44px;transition:border-color .15s;}
+.notes-area textarea:focus{outline:none;border-color:var(--accent);}
+
+/* Charts */
+.chart-tabs{display:flex;gap:.35rem;margin-bottom:.9rem;flex-wrap:wrap;}
+.chart-tab{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.06em;text-transform:uppercase;padding:.32rem .7rem;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;}
+.chart-tab:hover{border-color:var(--text);color:var(--text);}
+.chart-tab.active{background:var(--accent);color:#0f0f0d;border-color:var(--accent);font-weight:700;}
+.metric-tabs{display:flex;gap:.35rem;margin-bottom:.85rem;flex-wrap:wrap;}
+.metric-tab{font-size:.7rem;padding:.25rem .6rem;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.metric-tab.active{background:var(--surface2);color:var(--text);border-color:var(--muted);}
+.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1rem;min-height:80px;}
+.chart-wrap canvas{max-height:230px;}
+.chart-empty{text-align:center;color:var(--muted);font-size:.8rem;padding:2.2rem 1rem;}
+
+/* History */
+.history-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:.55rem 0;margin-bottom:.35rem;}
+.history-list{display:none;}
+.history-list.open{display:block;}
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:.6rem .85rem;margin-bottom:.4rem;display:flex;align-items:center;gap:.85rem;cursor:pointer;transition:border-color .15s;}
+.history-item:hover{border-color:var(--accent2);}
+.history-date{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--accent2);min-width:88px;}
+.history-summary{font-size:.75rem;color:var(--muted);flex:1;}
+
+/* Toast */
+.toast{position:fixed;bottom:1.4rem;right:1.4rem;background:var(--accent);color:#0f0f0d;font-weight:700;font-size:.82rem;padding:.65rem 1.1rem;border-radius:4px;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);z-index:10000;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* ── MODALS ──────────────────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:5000;display:flex;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.hidden{display:none;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.4rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+.modal h2{font-family:'DM Mono',monospace;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:1.1rem;}
+.modal-row{margin-bottom:.85rem;}
+.modal-row label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:.3rem;font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;}
+.modal-row input[type="text"],.modal-row select,.modal-row textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.88rem;padding:.5rem .7rem;transition:border-color .15s;}
+.modal-row input[type="text"]:focus,.modal-row select:focus,.modal-row textarea:focus{outline:none;border-color:var(--accent);}
+.modal-row textarea{resize:vertical;min-height:80px;}
+.modal-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.2rem;}
+.setting-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.45rem;}
+.setting-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Mono',monospace;font-size:.85rem;padding:.38rem .6rem;}
+.setting-row input:focus{outline:none;border-color:var(--accent);}
+.setting-row select{background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Mono',monospace;font-size:.82rem;padding:.38rem .5rem;}
+.add-setting-btn{font-size:.72rem;color:var(--accent3);background:none;border:1px dashed rgba(96,196,240,.3);border-radius:3px;padding:.25rem .6rem;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:.3rem;}
+.add-setting-btn:hover{background:rgba(96,196,240,.06);border-color:var(--accent3);}
+.divider{height:1px;background:var(--border);margin:1rem 0;}
+
+/* Custom machines section */
+.custom-ex-card{background:var(--surface);border:1px solid rgba(96,196,240,.2);border-radius:6px;margin-bottom:.6rem;overflow:hidden;}
+.custom-ex-card .exercise-header{border-bottom:none;}
+
+/* Import area */
+.import-area{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Mono',monospace;font-size:.75rem;padding:.55rem .7rem;resize:vertical;min-height:110px;transition:border-color .15s;}
+.import-area:focus{outline:none;border-color:var(--accent3);}
+
+/* Light mode overrides */
+[data-theme="light"] .logo span { color: var(--logo-dot-color); }
+[data-theme="light"] .stat-value { color: var(--accent); }
+[data-theme="light"] .btn-primary { background:var(--accent); color:#fff; }
+[data-theme="light"] .btn-primary:hover { background:#4a7800; }
+[data-theme="light"] .btn-orange { color:var(--accent2); border-color:var(--accent2); }
+[data-theme="light"] .btn-orange:hover { background:rgba(192,112,0,.1); }
+[data-theme="light"] .btn-blue { color:var(--accent3); border-color:var(--accent3); }
+[data-theme="light"] .btn-blue:hover { background:rgba(0,112,168,.1); }
+[data-theme="light"] .add-set-btn { color:var(--accent); border-color:rgba(90,138,0,.35); }
+[data-theme="light"] .add-set-btn:hover { background:rgba(90,138,0,.06); border-color:var(--accent); }
+[data-theme="light"] .chart-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+[data-theme="light"] .exercise-instruction { background:rgba(90,138,0,.07); border-color:rgba(90,138,0,.2); color:var(--accent); }
+[data-theme="light"] .exercise-instruction .dot { color:var(--accent2); }
+[data-theme="light"] .last-session-bar { background:rgba(0,112,168,.06); border-color:rgba(0,112,168,.2); }
+[data-theme="light"] .last-session-bar label { color:var(--accent3); }
+[data-theme="light"] .setting-pill { background:rgba(192,112,0,.08); border-color:rgba(192,112,0,.22); color:var(--accent2); }
+[data-theme="light"] .check-item input[type="checkbox"]:checked~.check-box { background:var(--accent); border-color:var(--accent); }
+[data-theme="light"] .check-item input[type="checkbox"]:checked~.check-box::after { color:#fff; }
+[data-theme="light"] .check-item input[type="checkbox"]:checked~.check-label { color:var(--muted); }
+[data-theme="light"] .history-item:hover { border-color:var(--accent2); }
+[data-theme="light"] .history-date { color:var(--accent2); }
+[data-theme="light"] .toast { background:var(--accent); color:#fff; }
+[data-theme="light"] .modal { background:var(--surface); border-color:var(--border); }
+[data-theme="light"] .modal h2 { color:var(--accent); }
+[data-theme="light"] .sets-table input[type="number"]:focus { border-bottom-color:var(--accent); }
+[data-theme="light"] .last-wt { color:rgba(90,138,0,.5); }
+[data-theme="light"] #themeToggle { background:var(--surface2); border-color:var(--border); color:var(--text); }
+
+/* Theme toggle button */
+#themeToggle {
+  background:var(--surface2); border:1px solid var(--border); border-radius:20px;
+  padding:.28rem .7rem; font-size:.9rem; cursor:pointer; line-height:1;
+  color:var(--text); display:flex; align-items:center; gap:.3rem;
+}
+#themeToggle:hover { border-color:var(--muted); }
+#themeToggle .toggle-label { font-family:'DM Mono',monospace; font-size:.62rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+
+@media(max-width:580px){.main{padding:.9rem 1rem;}header{padding:.9rem 1rem;}.modal{padding:1rem;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">SCOTT<span>.</span>FIT</div>
+    <div class="date-badge" id="todayLabel"></div>
+  </div>
+  <div class="header-btns">
+    <button id="themeToggle" onclick="toggleTheme()" title="Toggle light / dark mode">
+      <span id="themeIcon">☀️</span><span class="toggle-label" id="themeLabel">Light</span>
+    </button>
+    <button class="btn btn-ghost" onclick="clearSession()">Clear</button>
+    <button class="btn btn-ghost btn-sm" onclick="openSettingsModal()">⚙ Machines</button>
+    <button class="btn btn-blue btn-sm" onclick="openDataModal()">⇅ Data</button>
+    <button class="btn btn-orange" onclick="exportCSV()">↓ CSV</button>
+    <button class="btn btn-primary" onclick="saveSession()">Save Workout</button>
+  </div>
+</header>
+
+<div class="main">
+
+  <div class="stats-strip">
+    <div class="stat"><div class="stat-value" id="statSessions">0</div><div class="stat-label">Sessions</div></div>
+    <div class="stat"><div class="stat-value" id="statSets">0</div><div class="stat-label">Total Sets</div></div>
+    <div class="stat"><div class="stat-value" id="statStreak">0</div><div class="stat-label">Day Streak</div></div>
+  </div>
+
+  <div class="session-bar">
+    <label for="sessionDate">Session date:</label>
+    <input type="date" id="sessionDate">
+  </div>
+
+  <!-- Last-session weight loader -->
+  <div class="last-session-bar">
+    <label>Pre-fill weights from:</label>
+    <select id="weightSourceSelect" onchange="applyWeightSource()">
+      <option value="last">Last session</option>
+    </select>
+    <span class="hint">— weights auto-filled; edit freely</span>
+  </div>
+
+  <!-- WARM UP -->
+  <div class="exercise-section">
+    <div class="section-label">Warm Up</div>
+    <div class="exercise-card" id="card-cardio">
+      <div class="exercise-header" onclick="toggleCard('cardio')">
+        <span class="exercise-name">Cardio Bike — LF Recumbent</span>
+        <span class="exercise-meta">Seat: 23 &nbsp;|&nbsp; Level 1–2 &nbsp;|&nbsp; Goal: 15 min or 2 miles</span>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="exercise-body">
+        <div class="cardio-fields">
+          <div class="cardio-field"><label>Time (min)</label><input type="number" id="cardio-time" min="0" step="1" placeholder="0" oninput="autoDraft()"></div>
+          <div class="cardio-field"><label>Distance (miles)</label><input type="number" id="cardio-miles" min="0" step="0.1" placeholder="0.0" oninput="autoDraft()"></div>
+          <div class="cardio-field"><label>Level</label><input type="number" id="cardio-level" min="1" step="1" placeholder="1" oninput="autoDraft()"></div>
+        </div>
+        <div class="notes-area"><textarea id="notes-cardio" placeholder="Notes..." oninput="autoDraft()"></textarea></div>
+      </div>
+    </div>
+    <div class="exercise-card" id="card-sts">
+      <div class="exercise-header" onclick="toggleCard('sts')">
+        <span class="exercise-name">Sit-to-Stand (Chair Stand)</span>
+        <span class="exercise-meta">Goal: 10 reps</span>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="exercise-body">
+        <table class="sets-table"><thead><tr><th>#</th><th>Weight</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-sts"></tbody></table>
+        <button class="add-set-btn" onclick="addSet('sts')">+ Add Set</button>
+        <div class="notes-area"><textarea id="notes-sts" placeholder="Notes..."></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STRENGTH -->
+  <div class="exercise-section">
+    <div class="section-header">
+      <div class="section-label">Strength</div>
+    </div>
+    <div id="strengthCards">
+      <!-- Built-in machines -->
+      <div class="exercise-card" id="card-chest-press">
+        <div class="exercise-header" onclick="toggleCard('chest-press')">
+          <span class="exercise-name">Chest Press</span>
+          <span class="exercise-meta">Arm: 2 &nbsp;|&nbsp; Seat: 4–5</span>
+          <span class="chevron">&#9660;</span>
+        </div>
+        <div class="exercise-body">
+          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
+          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-chest-press"></tbody></table>
+          <button class="add-set-btn" onclick="addSet('chest-press')">+ Add Set</button>
+          <div class="notes-area"><textarea id="notes-chest-press" placeholder="Notes..."></textarea></div>
+        </div>
+      </div>
+      <div class="exercise-card" id="card-row">
+        <div class="exercise-header" onclick="toggleCard('row')">
+          <span class="exercise-name">Row</span>
+          <span class="exercise-meta">Chest: 3 &nbsp;|&nbsp; Seat: 5</span>
+          <span class="chevron">&#9660;</span>
+        </div>
+        <div class="exercise-body">
+          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
+          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-row"></tbody></table>
+          <button class="add-set-btn" onclick="addSet('row')">+ Add Set</button>
+          <div class="notes-area"><textarea id="notes-row" placeholder="Notes..."></textarea></div>
+        </div>
+      </div>
+      <div class="exercise-card" id="card-leg-curl">
+        <div class="exercise-header" onclick="toggleCard('leg-curl')">
+          <span class="exercise-name">Seated Leg Curl</span>
+          <span class="exercise-meta"></span>
+          <span class="chevron">&#9660;</span>
+        </div>
+        <div class="exercise-body">
+          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
+          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-leg-curl"></tbody></table>
+          <button class="add-set-btn" onclick="addSet('leg-curl')">+ Add Set</button>
+          <div class="notes-area"><textarea id="notes-leg-curl" placeholder="Notes..."></textarea></div>
+        </div>
+      </div>
+      <div class="exercise-card" id="card-leg-press">
+        <div class="exercise-header" onclick="toggleCard('leg-press')">
+          <span class="exercise-name">Seated Leg Press</span>
+          <span class="exercise-meta">Seat: 10</span>
+          <span class="chevron">&#9660;</span>
+        </div>
+        <div class="exercise-body">
+          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
+          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-leg-press"></tbody></table>
+          <button class="add-set-btn" onclick="addSet('leg-press')">+ Add Set</button>
+          <div class="notes-area"><textarea id="notes-leg-press" placeholder="Notes..."></textarea></div>
+        </div>
+      </div>
+      <div class="exercise-card" id="card-leg-ext">
+        <div class="exercise-header" onclick="toggleCard('leg-ext')">
+          <span class="exercise-name">Leg Extension</span>
+          <span class="exercise-meta"></span>
+          <span class="chevron">&#9660;</span>
+        </div>
+        <div class="exercise-body">
+          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
+          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-leg-ext"></tbody></table>
+          <button class="add-set-btn" onclick="addSet('leg-ext')">+ Add Set</button>
+          <div class="notes-area"><textarea id="notes-leg-ext" placeholder="Notes..."></textarea></div>
+        </div>
+      </div>
+    </div>
+    <!-- Custom machine cards rendered here by JS -->
+    <div id="customMachineCards"></div>
+  </div>
+
+  <!-- BALANCE -->
+  <div class="exercise-section">
+    <div class="section-label">Balance</div>
+    <div class="checklist-card" id="card-balance">
+      <div class="exercise-header" onclick="toggleCard('balance')">
+        <span class="exercise-name">Balance Exercises</span>
+        <span class="exercise-meta">Complete each one</span>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="exercise-body">
+        <div class="check-list">
+          <label class="check-item"><input type="checkbox" id="chk-slb" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">SLB <em>(Single Leg Balance)</em></span></label>
+          <label class="check-item"><input type="checkbox" id="chk-tandem" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Tandem</span></label>
+          <label class="check-item"><input type="checkbox" id="chk-side-stepper" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Side Stepper</span></label>
+          <label class="check-item"><input type="checkbox" id="chk-grapevine" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Grapevine</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COOL DOWN -->
+  <div class="exercise-section">
+    <div class="section-label">Cool Down</div>
+    <div class="checklist-card" id="card-cooldown">
+      <div class="exercise-header" onclick="toggleCard('cooldown')">
+        <span class="exercise-name">Cool Down</span>
+        <span class="exercise-meta">1 slow lap on track</span>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="exercise-body">
+        <div class="check-list">
+          <label class="check-item"><input type="checkbox" id="chk-cooldown-lap" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Completed 1 slow lap on track</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STRETCHES -->
+  <div class="exercise-section">
+    <div class="section-label">Stretches</div>
+    <div class="checklist-card" id="card-stretches">
+      <div class="exercise-header" onclick="toggleCard('stretches')">
+        <span class="exercise-name">Stretches</span>
+        <span class="exercise-meta">30 sec each side</span>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="exercise-body">
+        <div class="check-list">
+          <label class="check-item"><input type="checkbox" id="chk-cross-arm" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Cross Arm Stretch <em>— each arm, 30 sec</em></span></label>
+          <label class="check-item"><input type="checkbox" id="chk-figure4" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Figure 4 Stretch <em>— each leg, 30 sec</em></span></label>
+          <label class="check-item"><input type="checkbox" id="chk-hamstring" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Hamstring Stretch <em>— each leg, 30 sec</em></span></label>
+          <label class="check-item"><input type="checkbox" id="chk-touch-toes" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Touch Toes Stretch <em>(seated) — each leg, 30 sec</em></span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS CHARTS -->
+  <div class="exercise-section">
+    <div class="section-label">Progress Charts</div>
+    <div class="chart-tabs" id="chartTabs">
+      <button class="chart-tab active" data-ex="chest-press">Chest Press</button>
+      <button class="chart-tab" data-ex="row">Row</button>
+      <button class="chart-tab" data-ex="leg-curl">Leg Curl</button>
+      <button class="chart-tab" data-ex="leg-press">Leg Press</button>
+      <button class="chart-tab" data-ex="leg-ext">Leg Ext</button>
+      <button class="chart-tab" data-ex="sts">STS</button>
+    </div>
+    <div class="metric-tabs" id="metricTabs">
+      <button class="metric-tab active" data-metric="max_weight">Max Weight</button>
+      <button class="metric-tab" data-metric="total_volume">Total Volume</button>
+      <button class="metric-tab" data-metric="total_reps">Total Reps</button>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="progressChart"></canvas>
+      <div class="chart-empty" id="chartEmpty">Save at least 2 sessions to see your progress chart.</div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="exercise-section">
+    <div class="history-toggle" onclick="toggleHistory()">
+      <div class="section-label" style="margin:0;border:none;padding:0;">Past Sessions</div>
+      <span class="chevron" id="historyChevron" style="color:var(--muted);font-size:.72rem;">&#9660;</span>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+</div><!-- /main -->
+
+<div class="toast" id="toast"></div>
+
+<!-- ══ SETTINGS MODAL (Machines) ══════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="settingsModal">
+  <div class="modal">
+    <h2>⚙ Machine Manager</h2>
+    <p style="font-size:.78rem;color:var(--muted);margin-bottom:1rem;">Edit settings for any machine. Tap a setting pill to change its value. Changes show instantly on the exercise cards.</p>
+    <div id="machineList"></div>
+    <button class="btn btn-blue btn-sm" onclick="openAddMachineForm()" style="width:100%;margin-top:.4rem;">+ Add New Machine</button>
+
+    <!-- Add/Edit machine form (hidden until triggered) -->
+    <div id="machineForm" style="display:none;">
+      <div class="divider"></div>
+      <h2 id="machineFormTitle">New Machine</h2>
+      <div class="modal-row">
+        <label>Machine Name</label>
+        <input type="text" id="mf-name" placeholder="e.g. Shoulder Press" style="transition:opacity .15s;">
+      </div>
+      <div class="modal-row">
+        <label>Default Sets</label>
+        <input type="text" id="mf-sets" placeholder="3" style="width:80px;">
+      </div>
+      <div class="modal-row">
+        <label>Default Reps</label>
+        <input type="text" id="mf-reps" placeholder="15" style="width:80px;">
+      </div>
+      <div class="modal-row">
+        <label>Default Weight (lbs)</label>
+        <input type="text" id="mf-weight" placeholder="30" style="width:80px;">
+      </div>
+      <div class="modal-row">
+        <label>Machine Settings <span style="color:var(--muted);font-size:.68rem;font-family:DM Mono">(seat / arm / chest positions)</span></label>
+        <div id="settingsRows"></div>
+        <button class="add-setting-btn" onclick="addSettingRow()">+ Add Setting</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" onclick="closeMachineForm()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveMachineForm()">Save Machine</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-sm" onclick="closeSettingsModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DATA MODAL (JSON export/import) ════════════════════════════════ -->
+<div class="modal-overlay hidden" id="dataModal">
+  <div class="modal">
+    <h2>⇅ Data — Export / Import</h2>
+
+    <p style="font-size:.78rem;color:var(--muted);margin-bottom:.8rem;line-height:1.5;">
+      Export saves all your sessions and custom machines as a JSON file — use it as a backup or to transfer to another device.<br>
+      Import replaces your current data (a confirmation will appear first).
+    </p>
+
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.2rem;">
+      <button class="btn btn-orange" onclick="exportJSON()">↓ Export JSON backup</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportCSV()">↓ Export CSV</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="modal-row" style="margin-top:1rem;">
+      <label>Import JSON (paste or load file)</label>
+      <textarea class="import-area" id="importText" placeholder='Paste exported JSON here, or use the button below to choose a file...'></textarea>
+    </div>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:.5rem;">
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer;">
+        Choose file <input type="file" accept=".json" style="display:none;" onchange="loadJSONFile(event)">
+      </label>
+      <button class="btn btn-blue btn-sm" onclick="importJSON()">↑ Import from text above</button>
+    </div>
+    <p style="font-size:.7rem;color:var(--red);font-family:'DM Mono',monospace;" id="importError"></p>
+
+    <div class="divider"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeDataModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// CONFIG — built-in exercises
+// ═══════════════════════════════════════════════════════════════════════
+var BUILTIN_EXERCISES = ['sts','chest-press','row','leg-curl','leg-press','leg-ext'];
+var DEFAULT_WEIGHT    = {'chest-press':30,'row':30,'leg-curl':30,'leg-press':30,'leg-ext':30};
+var IS_BODYWEIGHT     = {'sts':true};
+var STS_DEFAULT_REPS  = 10;
+var DEFAULT_REPS      = 15;
+var DEFAULT_SETS      = 3;
+var EX_LABELS = {
+  'sts':'Sit-to-Stand','chest-press':'Chest Press','row':'Row',
+  'leg-curl':'Seated Leg Curl','leg-press':'Seated Leg Press','leg-ext':'Leg Extension'
+};
+var EX_SHORT = {
+  'sts':'STS','chest-press':'CP','row':'Row','leg-curl':'SLC','leg-press':'SLP','leg-ext':'LE'
+};
+var METRIC_LABELS = {
+  'max_weight':'Max Weight (lbs)','total_volume':'Total Volume (lbs×reps)','total_reps':'Total Reps'
+};
+
+var SESSION_KEY   = 'scottfit_v3_sessions';
+var DRAFT_KEY     = 'scottfit_v3_draft';
+var MACHINES_KEY  = 'scottfit_v3_machines';
+var BSETTINGS_KEY = 'scottfit_v3_builtin_settings';
+
+// Default settings for built-in machines (editable by user, stored separately)
+var BUILTIN_DEFAULTS = {
+  'chest-press': { settings: [{type:'arm',   value:'2'}, {type:'seat', value:'4-5'}] },
+  'row':         { settings: [{type:'chest', value:'3'}, {type:'seat', value:'5'}]   },
+  'leg-curl':    { settings: [] },
+  'leg-press':   { settings: [{type:'seat',  value:'10'}] },
+  'leg-ext':     { settings: [] }
+};
+
+var chartInstance    = null;
+var editingMachineId = null;
+var editingBuiltin   = false;
+
+// ═══════════════════════════════════════════════════════════════════════
+// STORAGE HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function getSessions()  { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || '[]'); } catch(e) { return []; } }
+function setSessions(a) { try { localStorage.setItem(SESSION_KEY, JSON.stringify(a)); } catch(e) {} }
+function getDraft()     { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch(e) { return null; } }
+function setDraft(o)    { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(o)); } catch(e) {} }
+function clearDraft()   { try { localStorage.removeItem(DRAFT_KEY); } catch(e) {} }
+function getMachines()  { try { return JSON.parse(localStorage.getItem(MACHINES_KEY) || '[]'); } catch(e) { return []; } }
+function setMachines(a) { try { localStorage.setItem(MACHINES_KEY, JSON.stringify(a)); } catch(e) {} }
+function getBuiltinSettings() {
+  try { return JSON.parse(localStorage.getItem(BSETTINGS_KEY) || '{}'); } catch(e) { return {}; }
+}
+function setBuiltinSettings(o) { try { localStorage.setItem(BSETTINGS_KEY, JSON.stringify(o)); } catch(e) {} }
+function getSettingsForBuiltin(exId) {
+  var stored = getBuiltinSettings();
+  return stored[exId] ? stored[exId].settings : (BUILTIN_DEFAULTS[exId] ? BUILTIN_DEFAULTS[exId].settings.map(function(s){ return {type:s.type, value:s.value}; }) : []);
+}
+function saveSettingsForBuiltin(exId, settings) {
+  var stored = getBuiltinSettings();
+  stored[exId] = { settings: settings };
+  setBuiltinSettings(stored);
+}
+
+function allExerciseIds() {
+  var ids = BUILTIN_EXERCISES.slice();
+  getMachines().forEach(function(m){ ids.push(m.id); });
+  return ids;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function showToast(msg, color) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = color || 'var(--accent)';
+  t.style.color = (color === 'var(--red)') ? '#fff' : '#0f0f0d';
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2600);
+}
+
+function toggleCard(id) {
+  var card = document.getElementById('card-' + id);
+  if (card) card.classList.toggle('open');
+}
+
+function toggleHistory() {
+  var list = document.getElementById('historyList');
+  var chev = document.getElementById('historyChevron');
+  list.classList.toggle('open');
+  chev.style.transform = list.classList.contains('open') ? 'rotate(180deg)' : '';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SET ROWS
+// ═══════════════════════════════════════════════════════════════════════
+function appendSetRow(exId, num, weight, reps, lastWeight) {
+  var tbody = document.getElementById('tbody-' + exId);
+  if (!tbody) return;
+  var bw = IS_BODYWEIGHT[exId];
+  var w  = (weight !== undefined && weight !== null && weight !== '') ? weight
+           : (bw ? '' : (DEFAULT_WEIGHT[exId] !== undefined ? DEFAULT_WEIGHT[exId]
+             : (getMachineById(exId) ? getMachineById(exId).defaultWeight : '')));
+  var r  = (reps !== undefined && reps !== null && reps !== '') ? reps
+           : (bw ? STS_DEFAULT_REPS : (getMachineById(exId) ? getMachineById(exId).defaultReps : DEFAULT_REPS));
+
+  var tr = document.createElement('tr');
+
+  var numTd = document.createElement('td');
+  numTd.className = 'set-num'; numTd.textContent = num;
+  tr.appendChild(numTd);
+
+  var wTd = document.createElement('td');
+  if (bw) {
+    wTd.className = 'bw-label'; wTd.textContent = 'bodyweight';
+  } else {
+    var wWrap = document.createElement('span');
+    wWrap.style.display = 'inline-flex'; wWrap.style.alignItems = 'center';
+    var wInput = document.createElement('input');
+    wInput.type = 'number'; wInput.min = '0'; wInput.step = '5';
+    wInput.placeholder = '—'; wInput.value = w;
+    wInput.addEventListener('input', autoDraft);
+    wWrap.appendChild(wInput);
+    if (lastWeight !== undefined && lastWeight !== null && lastWeight !== '') {
+      var hint = document.createElement('span');
+      hint.className = 'last-wt'; hint.title = 'Previous session weight';
+      hint.textContent = '↑' + lastWeight;
+      wWrap.appendChild(hint);
+    }
+    wTd.appendChild(wWrap);
+  }
+  tr.appendChild(wTd);
+
+  var rTd = document.createElement('td');
+  var rInput = document.createElement('input');
+  rInput.type = 'number'; rInput.min = '0';
+  rInput.placeholder = '—'; rInput.value = r;
+  rInput.addEventListener('input', autoDraft);
+  rTd.appendChild(rInput);
+  tr.appendChild(rTd);
+
+  var delTd = document.createElement('td');
+  var delBtn = document.createElement('button');
+  delBtn.className = 'btn btn-danger'; delBtn.textContent = '✕';
+  delBtn.addEventListener('click', function(){ removeSet(this); });
+  delTd.appendChild(delBtn);
+  tr.appendChild(delTd);
+
+  tbody.appendChild(tr);
+}
+
+function addSet(exId) {
+  var tbody = document.getElementById('tbody-' + exId);
+  if (!tbody) return;
+  var num = tbody.querySelectorAll('tr').length + 1;
+  appendSetRow(exId, num, null, null);
+  autoDraft();
+}
+
+function removeSet(btn) {
+  var tr = btn.closest('tr'); var tbody = tr.parentElement;
+  tr.remove();
+  tbody.querySelectorAll('tr').forEach(function(r,i){
+    r.querySelector('.set-num').textContent = i + 1;
+  });
+  autoDraft();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// WEIGHT SOURCE (last session / chosen session)
+// ═══════════════════════════════════════════════════════════════════════
+function buildWeightSourceDropdown() {
+  var sel = document.getElementById('weightSourceSelect');
+  var sessions = getSessions();
+  // keep first option
+  while (sel.options.length > 1) sel.remove(1);
+  sessions.slice(0,20).forEach(function(s){
+    var opt = document.createElement('option');
+    opt.value = s.date; opt.textContent = s.date;
+    sel.appendChild(opt);
+  });
+}
+
+function getWeightSource() {
+  var sel = document.getElementById('weightSourceSelect');
+  var val = sel ? sel.value : 'last';
+  if (val === 'last') {
+    var sessions = getSessions();
+    return sessions.length > 0 ? sessions[0] : null;
+  }
+  return getSessions().find(function(s){ return s.date === val; }) || null;
+}
+
+// Return {exId: [{weight, reps}, ...]} for each exercise from source session
+function getLastWeightsForEx(exId) {
+  var src = getWeightSource();
+  if (!src || !src.exercises || !src.exercises[exId]) return [];
+  return src.exercises[exId].sets || [];
+}
+
+function applyWeightSource() {
+  // Re-seed all exercise set rows from new source
+  allExerciseIds().forEach(function(exId){
+    if (IS_BODYWEIGHT[exId]) return;
+    var tbody = document.getElementById('tbody-' + exId);
+    if (!tbody) return;
+    var lastSets = getLastWeightsForEx(exId);
+    var count = tbody.querySelectorAll('tr').length;
+    // Re-render rows keeping reps from current, updating weights
+    var current = [];
+    tbody.querySelectorAll('tr').forEach(function(tr){
+      var inputs = tr.querySelectorAll('input[type="number"]');
+      current.push({ weight: inputs[0] ? inputs[0].value : '', reps: inputs[1] ? inputs[1].value : '' });
+    });
+    tbody.innerHTML = '';
+    for (var i = 0; i < count; i++) {
+      var srcW = lastSets[i] ? lastSets[i].weight : '';
+      var curR = current[i] ? current[i].reps : '';
+      appendSetRow(exId, i+1, srcW, curR || null, lastSets[i] ? lastSets[i].weight : undefined);
+    }
+  });
+  autoDraft();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// COLLECT / DRAFT / POPULATE
+// ═══════════════════════════════════════════════════════════════════════
+function collectSession() {
+  var date = document.getElementById('sessionDate').value;
+  var cardioData = {
+    time:  (document.getElementById('cardio-time')  || {}).value  || '',
+    miles: (document.getElementById('cardio-miles') || {}).value || '',
+    level: (document.getElementById('cardio-level') || {}).value || '',
+    notes: (document.getElementById('notes-cardio') || {}).value || ''
+  };
+  var exercises = {};
+  allExerciseIds().forEach(function(exId){
+    var tbody  = document.getElementById('tbody-' + exId);
+    var noteEl = document.getElementById('notes-' + exId);
+    var sets = [];
+    if (tbody) {
+      tbody.querySelectorAll('tr').forEach(function(tr){
+        var inputs = tr.querySelectorAll('input[type="number"]');
+        if (IS_BODYWEIGHT[exId]) {
+          sets.push({ weight:'', reps: inputs[0] ? inputs[0].value : '' });
+        } else {
+          sets.push({ weight: inputs[0] ? inputs[0].value : '', reps: inputs[1] ? inputs[1].value : '' });
+        }
+      });
+    }
+    exercises[exId] = { sets:sets, notes: noteEl ? noteEl.value : '' };
+  });
+  var checks = {};
+  ['slb','tandem','side-stepper','grapevine','cooldown-lap','cross-arm','figure4','hamstring','touch-toes'].forEach(function(id){
+    var el = document.getElementById('chk-' + id);
+    checks[id] = el ? el.checked : false;
+  });
+  return { date:date, cardio:cardioData, exercises:exercises, checks:checks };
+}
+
+function autoDraft() { setDraft(collectSession()); }
+
+function seedSetsForEx(exId, sourceData) {
+  // sourceData = array of {weight, reps} from saved session or null
+  var tbody = document.getElementById('tbody-' + exId);
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  var lastSets = getLastWeightsForEx(exId); // for hint display
+
+  if (sourceData && sourceData.length > 0) {
+    sourceData.forEach(function(s, i){
+      appendSetRow(exId, i+1, s.weight, s.reps, lastSets[i] ? lastSets[i].weight : undefined);
+    });
+  } else {
+    var seedCount = IS_BODYWEIGHT[exId] ? 1
+                  : (getMachineById(exId) ? getMachineById(exId).defaultSets : DEFAULT_SETS);
+    var srcW = function(i){ return lastSets[i] ? lastSets[i].weight : null; };
+    for (var s = 0; s < seedCount; s++) {
+      appendSetRow(exId, s+1, srcW(s), null, lastSets[s] ? lastSets[s].weight : undefined);
+    }
+  }
+}
+
+function populateFromData(data) {
+  if (data && data.date) document.getElementById('sessionDate').value = data.date;
+  if (data && data.cardio) {
+    var cd = data.cardio;
+    if (document.getElementById('cardio-time'))  document.getElementById('cardio-time').value  = cd.time  || '';
+    if (document.getElementById('cardio-miles')) document.getElementById('cardio-miles').value = cd.miles || '';
+    if (document.getElementById('cardio-level')) document.getElementById('cardio-level').value = cd.level || '';
+    if (document.getElementById('notes-cardio')) document.getElementById('notes-cardio').value = cd.notes || '';
+  }
+  allExerciseIds().forEach(function(exId){
+    var noteEl = document.getElementById('notes-' + exId);
+    var ex = data && data.exercises && data.exercises[exId];
+    seedSetsForEx(exId, ex ? ex.sets : null);
+    if (noteEl) noteEl.value = (ex && ex.notes) ? ex.notes : '';
+  });
+  var chks = (data && data.checks) || {};
+  ['slb','tandem','side-stepper','grapevine','cooldown-lap','cross-arm','figure4','hamstring','touch-toes'].forEach(function(id){
+    var el = document.getElementById('chk-' + id); if (el) el.checked = chks[id] || false;
+  });
+}
+
+function saveSession() {
+  var session  = collectSession();
+  var sessions = getSessions();
+  var idx      = sessions.findIndex(function(s){ return s.date === session.date; });
+  if (idx >= 0) sessions[idx] = session; else sessions.unshift(session);
+  setSessions(sessions);
+  clearDraft();
+  showToast('✓ Workout saved!');
+  updateStats(); renderHistory(); renderChart();
+  buildWeightSourceDropdown();
+}
+
+function clearSession() {
+  if (!confirm('Clear current session?')) return;
+  clearDraft();
+  ['cardio-time','cardio-miles','cardio-level'].forEach(function(id){ var el = document.getElementById(id); if(el) el.value=''; });
+  var cn = document.getElementById('notes-cardio'); if(cn) cn.value='';
+  allExerciseIds().forEach(function(exId){
+    var noteEl = document.getElementById('notes-' + exId);
+    seedSetsForEx(exId, null);
+    if(noteEl) noteEl.value='';
+  });
+  ['slb','tandem','side-stepper','grapevine','cooldown-lap','cross-arm','figure4','hamstring','touch-toes'].forEach(function(id){
+    var el = document.getElementById('chk-'+id); if(el) el.checked=false;
+  });
+}
+
+function loadSessionData(s) {
+  if (!confirm('Load session from ' + s.date + '?')) return;
+  populateFromData(s);
+  allExerciseIds().forEach(function(id){ var c = document.getElementById('card-'+id); if(c) c.classList.add('open'); });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function deleteSession(date, e) {
+  e.stopPropagation();
+  if (!confirm('Delete session from ' + date + '?')) return;
+  setSessions(getSessions().filter(function(s){ return s.date !== date; }));
+  updateStats(); renderHistory(); renderChart(); buildWeightSourceDropdown();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════════════════════════════
+function updateStats() {
+  var sessions = getSessions();
+  document.getElementById('statSessions').textContent = sessions.length;
+  var totalSets = 0;
+  sessions.forEach(function(s){
+    if (!s.exercises) return;
+    Object.values(s.exercises).forEach(function(ex){
+      totalSets += (ex.sets||[]).filter(function(set){ return set.weight||set.reps; }).length;
+    });
+  });
+  document.getElementById('statSets').textContent = totalSets;
+  var streak = 0;
+  var sorted = sessions.map(function(s){ return s.date; }).sort().reverse();
+  var checkDate = new Date(); checkDate.setHours(12,0,0,0);
+  for (var i=0; i<sorted.length; i++) {
+    var cs = checkDate.toISOString().split('T')[0];
+    if (sorted[i] === cs) { streak++; checkDate.setDate(checkDate.getDate()-1); }
+    else if (sorted[i] < cs) break;
+  }
+  document.getElementById('statStreak').textContent = streak;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════════════════════════════════
+function getExLabel(exId) {
+  if (EX_SHORT[exId]) return EX_SHORT[exId];
+  var m = getMachineById(exId); return m ? m.name.split(' ').map(function(w){ return w[0]; }).join('') : exId;
+}
+
+function renderHistory() {
+  var sessions = getSessions();
+  var list = document.getElementById('historyList');
+  list.innerHTML = '';
+  if (sessions.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:.78rem;padding:.35rem 0;">No sessions yet. Save your first workout!</p>';
+    return;
+  }
+  sessions.slice(0,15).forEach(function(s){
+    var summary = allExerciseIds().map(function(exId){
+      var ex = s.exercises && s.exercises[exId];
+      if (!ex) return null;
+      var filled = (ex.sets||[]).filter(function(set){ return set.weight||set.reps; });
+      return filled.length > 0 ? getExLabel(exId)+':'+filled.length+'sets' : null;
+    }).filter(Boolean);
+    var div = document.createElement('div'); div.className = 'history-item';
+    var dateSpan = document.createElement('span'); dateSpan.className = 'history-date'; dateSpan.textContent = s.date;
+    var summSpan = document.createElement('span'); summSpan.className = 'history-summary';
+    summSpan.textContent = summary.join(' · ') || 'No sets logged';
+    var delBtn = document.createElement('button'); delBtn.className = 'btn btn-danger'; delBtn.textContent = '✕';
+    delBtn.addEventListener('click', function(e){ deleteSession(s.date, e); });
+    div.appendChild(dateSpan); div.appendChild(summSpan); div.appendChild(delBtn);
+    div.addEventListener('click', function(e){ if (e.target !== delBtn) loadSessionData(s); });
+    list.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CHART
+// ═══════════════════════════════════════════════════════════════════════
+function getActiveEx()     { var el = document.querySelector('.chart-tab.active');  return el ? el.dataset.ex     : 'chest-press'; }
+function getActiveMetric() { var el = document.querySelector('.metric-tab.active'); return el ? el.dataset.metric : 'max_weight'; }
+
+function getChartData(exId, metric) {
+  var sessions = getSessions();
+  var sorted = sessions.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+  var labels=[], values=[];
+  sorted.forEach(function(s){
+    var ex = s.exercises && s.exercises[exId];
+    if (!ex || !ex.sets) return;
+    var bw = IS_BODYWEIGHT[exId];
+    var valid = ex.sets.filter(function(set){ return bw ? set.reps : (set.weight && set.reps); });
+    if (!valid.length) return;
+    labels.push(s.date);
+    if (metric === 'max_weight') values.push(bw ? null : Math.max.apply(null, valid.map(function(s){ return parseFloat(s.weight)||0; })));
+    else if (metric === 'total_volume') values.push(bw
+      ? valid.reduce(function(sum,s){ return sum+(parseInt(s.reps)||0); },0)
+      : valid.reduce(function(sum,s){ return sum+(parseFloat(s.weight)||0)*(parseInt(s.reps)||0); },0));
+    else values.push(valid.reduce(function(sum,s){ return sum+(parseInt(s.reps)||0); },0));
+  });
+  return { labels:labels, values:values };
+}
+
+function renderChart() {
+  var exId = getActiveEx(); var metric = getActiveMetric();
+  var data = getChartData(exId, metric);
+  var canvas = document.getElementById('progressChart');
+  var empty  = document.getElementById('chartEmpty');
+  if (!canvas) return;
+  var validVals = data.values.filter(function(v){ return v !== null; });
+  if (data.labels.length < 2 || validVals.length < 2) {
+    canvas.style.display='none'; empty.style.display='block';
+    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+    return;
+  }
+  canvas.style.display='block'; empty.style.display='none';
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  var lineColor   = isLight ? '#5a8a00' : '#d4f060';
+  var fillColor   = isLight ? 'rgba(90,138,0,.08)' : 'rgba(212,240,96,.07)';
+  var ptBorder    = isLight ? '#ffffff' : '#0f0f0d';
+  var tooltipBg   = isLight ? '#ffffff' : '#1a1a16';
+  var tooltipBdr  = isLight ? '#d0d0c4' : '#2e2e28';
+  var tooltipTxt  = isLight ? '#1a1a14' : '#e8e8e0';
+  var gridColor   = isLight ? '#e0e0d8' : '#2e2e28';
+  var tickColor   = isLight ? '#888878' : '#666660';
+
+  chartInstance = new Chart(canvas.getContext('2d'), {
+    type:'line',
+    data:{ labels:data.labels, datasets:[{
+      label:METRIC_LABELS[metric], data:data.values,
+      borderColor:lineColor, backgroundColor:fillColor,
+      pointBackgroundColor:lineColor, pointBorderColor:ptBorder,
+      pointBorderWidth:2, pointRadius:5, pointHoverRadius:7,
+      borderWidth:2, tension:.3, fill:true, spanGaps:true
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:tooltipBg,borderColor:tooltipBdr,borderWidth:1,titleColor:tooltipTxt,bodyColor:lineColor,
+          titleFont:{family:'DM Mono',size:10},bodyFont:{family:'DM Mono',size:12,weight:'600'},padding:9}
+      },
+      scales:{
+        x:{grid:{color:gridColor},ticks:{color:tickColor,font:{family:'DM Mono',size:9},maxRotation:45}},
+        y:{grid:{color:gridColor},ticks:{color:tickColor,font:{family:'DM Mono',size:9}},beginAtZero:false}
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CSV EXPORT
+// ═══════════════════════════════════════════════════════════════════════
+function exportCSV() {
+  var sessions = getSessions();
+  if (!sessions.length) { alert('No sessions saved yet!'); return; }
+  var rows = [['Date','Exercise','Set #','Weight (lbs)','Reps','Volume']];
+  sessions.slice().sort(function(a,b){ return a.date.localeCompare(b.date); }).forEach(function(s){
+    allExerciseIds().forEach(function(exId){
+      var ex = s.exercises && s.exercises[exId];
+      if (!ex || !ex.sets || !ex.sets.length) return;
+      var label = EX_LABELS[exId] || (getMachineById(exId) ? getMachineById(exId).name : exId);
+      var notes = (ex.notes||'').replace(/"/g,'""');
+      ex.sets.forEach(function(set, i){
+        var w   = IS_BODYWEIGHT[exId] ? 'BW' : (parseFloat(set.weight)||'');
+        var r   = parseInt(set.reps)||'';
+        var vol = (!IS_BODYWEIGHT[exId] && w && r) ? w*r : '';
+        rows.push([s.date, label, i+1, w, r, vol, i===0?'"'+notes+'"':'']);
+      });
+    });
+  });
+  triggerDownload(rows.map(function(r){ return r.join(','); }).join('\n'), 'text/csv', 'scottfit_'+today()+'.csv');
+  showToast('✓ CSV downloaded!');
+  closeDataModal();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// JSON EXPORT / IMPORT
+// ═══════════════════════════════════════════════════════════════════════
+function exportJSON() {
+  var payload = {
+    version: 3,
+    exportedAt: new Date().toISOString(),
+    sessions: getSessions(),
+    machines: getMachines(),
+    builtinSettings: getBuiltinSettings()
+  };
+  triggerDownload(JSON.stringify(payload, null, 2), 'application/json', 'scottfit_backup_'+today()+'.json');
+  showToast('✓ JSON backup downloaded!');
+}
+
+function loadJSONFile(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('importText').value = e.target.result;
+    document.getElementById('importError').textContent = '';
+  };
+  reader.readAsText(file);
+}
+
+function importJSON() {
+  var raw = document.getElementById('importText').value.trim();
+  var errEl = document.getElementById('importError');
+  errEl.textContent = '';
+  if (!raw) { errEl.textContent = 'Nothing to import — paste JSON or choose a file.'; return; }
+  var payload;
+  try { payload = JSON.parse(raw); } catch(e) { errEl.textContent = 'Invalid JSON: ' + e.message; return; }
+  if (!payload.sessions || !Array.isArray(payload.sessions)) {
+    errEl.textContent = 'JSON does not look like a Scott.Fit backup (missing sessions array).'; return;
+  }
+  if (!confirm('Import ' + payload.sessions.length + ' sessions' +
+      (payload.machines && payload.machines.length ? ' and ' + payload.machines.length + ' custom machines' : '') +
+      '?\n\nThis will REPLACE your current data.')) return;
+  setSessions(payload.sessions);
+  if (payload.machines && Array.isArray(payload.machines)) setMachines(payload.machines);
+  if (payload.builtinSettings && typeof payload.builtinSettings === 'object') setBuiltinSettings(payload.builtinSettings);
+  clearDraft();
+  closeDataModal();
+  renderCustomMachineCards();
+  ['chest-press','row','leg-curl','leg-press','leg-ext'].forEach(function(exId){ refreshBuiltinCardMeta(exId); });
+  buildWeightSourceDropdown();
+  populateFromData(null);
+  updateStats(); renderHistory(); renderChart();
+  showToast('✓ Data imported — ' + payload.sessions.length + ' sessions loaded.');
+}
+
+function triggerDownload(content, type, filename) {
+  var blob = new Blob([content], {type: type + ';charset=utf-8;'});
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function today() { return new Date().toISOString().split('T')[0]; }
+
+// ═══════════════════════════════════════════════════════════════════════
+// SETTINGS MODAL — Machine Manager
+// ═══════════════════════════════════════════════════════════════════════
+function openSettingsModal() {
+  document.getElementById('settingsModal').classList.remove('hidden');
+  closeMachineForm();
+  renderMachineList();
+}
+function closeSettingsModal() {
+  document.getElementById('settingsModal').classList.add('hidden');
+  // Re-enable name field in case builtin form left it disabled
+  document.getElementById('mf-name').disabled = false;
+  renderCustomMachineCards();
+  // Refresh all builtin card metas and pills
+  ['chest-press','row','leg-curl','leg-press','leg-ext'].forEach(function(exId){
+    refreshBuiltinCardMeta(exId);
+  });
+  populateFromData(getDraft());
+}
+function openDataModal() {
+  document.getElementById('importText').value = '';
+  document.getElementById('importError').textContent = '';
+  document.getElementById('dataModal').classList.remove('hidden');
+}
+function closeDataModal() { document.getElementById('dataModal').classList.add('hidden'); }
+
+function renderMachineList() {
+  var list = document.getElementById('machineList');
+  list.innerHTML = '';
+
+  // Section: built-in machines
+  var builtinHeader = document.createElement('p');
+  builtinHeader.style.cssText = 'font-family:DM Mono,monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem;';
+  builtinHeader.textContent = 'Built-in Machines';
+  list.appendChild(builtinHeader);
+
+  ['chest-press','row','leg-curl','leg-press','leg-ext'].forEach(function(exId){
+    var m = getMachineById(exId);
+    list.appendChild(buildMachineRow(m, false));
+  });
+
+  var div = document.createElement('div');
+  div.style.cssText = 'height:1px;background:var(--border);margin:.75rem 0;';
+  list.appendChild(div);
+
+  var customHeader = document.createElement('p');
+  customHeader.style.cssText = 'font-family:DM Mono,monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem;';
+  customHeader.textContent = 'Custom Machines';
+  list.appendChild(customHeader);
+
+  var machines = getMachines();
+  if (!machines.length) {
+    var none = document.createElement('p');
+    none.style.cssText = 'font-size:.76rem;color:var(--muted);margin-bottom:.6rem;';
+    none.textContent = 'None yet — add one below.';
+    list.appendChild(none);
+  } else {
+    machines.forEach(function(m){ list.appendChild(buildMachineRow(m, true)); });
+  }
+}
+
+function buildMachineRow(m, isCustom) {
+  var row = document.createElement('div');
+  row.style.cssText = 'margin-bottom:.4rem;padding:.5rem .65rem;background:var(--surface2);border-radius:5px;border:1px solid var(--border);';
+
+  // Top line: name + buttons
+  var topLine = document.createElement('div');
+  topLine.style.cssText = 'display:flex;align-items:center;gap:.5rem;';
+  var nameSpan = document.createElement('span');
+  nameSpan.style.cssText = 'flex:1;font-size:.85rem;font-weight:500;';
+  nameSpan.textContent = m.name;
+  var editBtn = document.createElement('button');
+  editBtn.className = 'btn btn-ghost btn-sm'; editBtn.textContent = 'Edit';
+  editBtn.addEventListener('click', function(){
+    if (isCustom) openEditMachineForm(m.id);
+    else openEditBuiltinForm(m.id);
+  });
+  topLine.appendChild(nameSpan); topLine.appendChild(editBtn);
+  if (isCustom) {
+    var delBtn = document.createElement('button');
+    delBtn.className = 'btn btn-danger'; delBtn.textContent = '✕';
+    delBtn.addEventListener('click', function(){
+      if (!confirm('Delete "' + m.name + '"?')) return;
+      setMachines(getMachines().filter(function(x){ return x.id !== m.id; }));
+      renderMachineList();
+    });
+    topLine.appendChild(delBtn);
+  }
+  row.appendChild(topLine);
+
+  // Setting pills (editable inline)
+  var settings = isCustom ? (m.settings||[]) : getSettingsForBuiltin(m.id);
+  if (settings.length) {
+    var pillRow = document.createElement('div');
+    pillRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.4rem;';
+    settings.forEach(function(s){
+      var pill = document.createElement('span');
+      pill.style.cssText = 'display:inline-flex;align-items:center;gap:.2rem;background:rgba(240,160,48,.09);border:1px solid rgba(240,160,48,.22);border-radius:3px;padding:.15rem .45rem;font-family:DM Mono,monospace;font-size:.65rem;color:var(--accent2);cursor:pointer;';
+      pill.title = 'Tap to edit ' + s.type;
+      pill.innerHTML = '<span style="color:var(--muted)">' + s.type + ':</span>&nbsp;<strong>' + s.value + '</strong>&nbsp;<span style="color:var(--muted);font-size:.6rem;">✎</span>';
+      pill.addEventListener('click', function(){
+        openInlineSettingEdit(m.id, s.type, isCustom);
+        setTimeout(renderMachineList, 100);
+      });
+      pillRow.appendChild(pill);
+    });
+    row.appendChild(pillRow);
+  }
+  return row;
+}
+
+function openAddMachineForm() {
+  editingMachineId = null;
+  document.getElementById('machineFormTitle').textContent = 'New Machine';
+  document.getElementById('mf-name').value   = '';
+  document.getElementById('mf-sets').value   = '3';
+  document.getElementById('mf-reps').value   = '15';
+  document.getElementById('mf-weight').value = '30';
+  document.getElementById('settingsRows').innerHTML = '';
+  document.getElementById('machineForm').style.display = 'block';
+}
+
+function openEditMachineForm(id) {
+  var m = getMachineById(id);
+  if (!m) return;
+  editingMachineId = id;
+  editingBuiltin = false;
+  document.getElementById('machineFormTitle').textContent = 'Edit Machine';
+  document.getElementById('mf-name').value   = m.name;
+  document.getElementById('mf-sets').value   = m.defaultSets || '3';
+  document.getElementById('mf-reps').value   = m.defaultReps || '15';
+  document.getElementById('mf-weight').value = m.defaultWeight || '30';
+  document.getElementById('mf-name').disabled = false;
+  var sr = document.getElementById('settingsRows'); sr.innerHTML = '';
+  (m.settings||[]).forEach(function(s){ addSettingRow(s.type, s.value); });
+  document.getElementById('machineForm').style.display = 'block';
+}
+
+function openEditBuiltinForm(exId) {
+  editingMachineId = exId;
+  editingBuiltin = true;
+  document.getElementById('machineFormTitle').textContent = 'Edit Machine Settings — ' + (EX_LABELS[exId] || exId);
+  document.getElementById('mf-name').value   = EX_LABELS[exId] || exId;
+  document.getElementById('mf-name').disabled = true; // name is fixed for builtins
+  document.getElementById('mf-sets').value   = DEFAULT_SETS;
+  document.getElementById('mf-reps').value   = DEFAULT_REPS;
+  document.getElementById('mf-weight').value = DEFAULT_WEIGHT[exId] || '30';
+  var sr = document.getElementById('settingsRows'); sr.innerHTML = '';
+  var settings = getSettingsForBuiltin(exId);
+  settings.forEach(function(s){ addSettingRow(s.type, s.value); });
+  document.getElementById('machineForm').style.display = 'block';
+}
+
+function closeMachineForm() {
+  document.getElementById('machineForm').style.display = 'none';
+  editingMachineId = null;
+}
+
+function addSettingRow(typeVal, valVal) {
+  var sr = document.getElementById('settingsRows');
+  var row = document.createElement('div'); row.className = 'setting-row';
+
+  var typeSelect = document.createElement('select');
+  ['Seat','Arm','Chest','Back','Height','Other'].forEach(function(t){
+    var opt = document.createElement('option');
+    opt.value = t.toLowerCase(); opt.textContent = t;
+    if (typeVal && t.toLowerCase() === typeVal) opt.selected = true;
+    typeSelect.appendChild(opt);
+  });
+
+  var valInput = document.createElement('input');
+  valInput.type = 'text'; valInput.placeholder = 'e.g. 4–5';
+  if (valVal) valInput.value = valVal;
+
+  var delBtn = document.createElement('button');
+  delBtn.className = 'btn btn-danger'; delBtn.textContent = '✕';
+  delBtn.addEventListener('click', function(){ row.remove(); });
+
+  row.appendChild(typeSelect); row.appendChild(valInput); row.appendChild(delBtn);
+  sr.appendChild(row);
+}
+
+function saveMachineForm() {
+  var name = document.getElementById('mf-name').value.trim();
+  var sets   = parseInt(document.getElementById('mf-sets').value)   || 3;
+  var reps   = parseInt(document.getElementById('mf-reps').value)   || 15;
+  var weight = parseFloat(document.getElementById('mf-weight').value) || 30;
+
+  var settings = [];
+  document.getElementById('settingsRows').querySelectorAll('.setting-row').forEach(function(row){
+    var t = row.querySelector('select').value;
+    var v = row.querySelector('input').value.trim();
+    if (v) settings.push({ type: t, value: v });
+  });
+
+  if (editingBuiltin) {
+    // Save settings for built-in machine (name/sets/reps/weight are fixed)
+    saveSettingsForBuiltin(editingMachineId, settings);
+    refreshBuiltinCardMeta(editingMachineId);
+    closeMachineForm();
+    renderMachineList();
+    showToast('✓ Settings saved!');
+    return;
+  }
+
+  if (!name) { alert('Please enter a machine name.'); return; }
+  var machines = getMachines();
+  if (editingMachineId && !editingBuiltin) {
+    var idx = machines.findIndex(function(m){ return m.id === editingMachineId; });
+    if (idx >= 0) machines[idx] = { id:editingMachineId, name:name, defaultSets:sets, defaultReps:reps, defaultWeight:weight, settings:settings };
+  } else {
+    var newId = 'custom-' + Date.now();
+    machines.push({ id:newId, name:name, defaultSets:sets, defaultReps:reps, defaultWeight:weight, settings:settings });
+  }
+  setMachines(machines);
+  closeMachineForm();
+  renderMachineList();
+  showToast('✓ Machine saved!');
+}
+
+function getMachineById(id) {
+  // Check custom machines first
+  var m = getMachines().find(function(m){ return m.id === id; });
+  if (m) return m;
+  // Synthesize a machine-like object for built-ins
+  if (BUILTIN_DEFAULTS[id]) {
+    return {
+      id: id,
+      name: EX_LABELS[id] || id,
+      defaultSets: DEFAULT_SETS,
+      defaultReps: DEFAULT_REPS,
+      defaultWeight: DEFAULT_WEIGHT[id] || 30,
+      settings: getSettingsForBuiltin(id),
+      isBuiltin: true
+    };
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SETTINGS HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function settingsToMeta(settings) {
+  return (settings||[]).map(function(s){
+    return s.type.charAt(0).toUpperCase()+s.type.slice(1)+': '+s.value;
+  }).join('  |  ');
+}
+
+function refreshBuiltinCardMeta(exId) {
+  var settings = getSettingsForBuiltin(exId);
+  var metaEl = document.querySelector('#card-' + exId + ' .exercise-meta');
+  if (metaEl) metaEl.textContent = settingsToMeta(settings);
+  // Refresh inline pills if visible in body
+  var pillsEl = document.querySelector('#card-' + exId + ' .machine-settings');
+  if (pillsEl) {
+    pillsEl.innerHTML = '';
+    settings.forEach(function(s){
+      var pill = document.createElement('span'); pill.className = 'setting-pill';
+      pill.innerHTML = '<span class="pill-label">' + s.type + ':</span> <span class="pill-val" data-ex="' + exId + '" data-type="' + s.type + '" title="Tap to edit" style="cursor:pointer;text-decoration:underline dotted">' + s.value + '</span>';
+      pill.querySelector('.pill-val').addEventListener('click', function(e){
+        e.stopPropagation();
+        openInlineSettingEdit(exId, s.type, false);
+      });
+      pillsEl.appendChild(pill);
+    });
+  }
+}
+
+// Quick-edit a single setting value inline (pill tap or from modal)
+function openInlineSettingEdit(exId, settingType, isCustom) {
+  var m = getMachineById(exId);
+  if (!m) return;
+  var current = (m.settings||[]).find(function(s){ return s.type === settingType; });
+  var currentVal = current ? current.value : '';
+  var label = settingType.charAt(0).toUpperCase() + settingType.slice(1);
+  var newVal = prompt(m.name + ' \u2014 ' + label + ' setting (e.g. 5 or 4-6):', currentVal);
+  if (newVal === null) return; // cancelled
+  newVal = newVal.trim();
+  if (isCustom) {
+    var machines = getMachines();
+    var idx = machines.findIndex(function(x){ return x.id === exId; });
+    if (idx < 0) return;
+    var settingIdx = (machines[idx].settings||[]).findIndex(function(s){ return s.type === settingType; });
+    if (settingIdx >= 0) machines[idx].settings[settingIdx].value = newVal;
+    else { if (!machines[idx].settings) machines[idx].settings=[]; machines[idx].settings.push({type:settingType,value:newVal}); }
+    setMachines(machines);
+    renderCustomMachineCards();
+  } else {
+    var settings = getSettingsForBuiltin(exId);
+    var si = settings.findIndex(function(s){ return s.type === settingType; });
+    if (si >= 0) settings[si].value = newVal;
+    else settings.push({type:settingType, value:newVal});
+    saveSettingsForBuiltin(exId, settings);
+    refreshBuiltinCardMeta(exId);
+  }
+  showToast('✓ ' + label + ' updated to ' + newVal);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER CUSTOM MACHINE CARDS (dynamic DOM)
+// ═══════════════════════════════════════════════════════════════════════
+function renderCustomMachineCards() {
+  var container = document.getElementById('customMachineCards');
+  container.innerHTML = '';
+
+  // Remove old chart tabs for custom machines, keep builtins
+  var chartTabsEl = document.getElementById('chartTabs');
+  chartTabsEl.querySelectorAll('[data-custom]').forEach(function(b){ b.remove(); });
+
+  getMachines().forEach(function(m){
+    var card = document.createElement('div');
+    card.className = 'exercise-card'; card.id = 'card-' + m.id;
+
+    // Meta string from settings
+    var metaStr = (m.settings||[]).map(function(s){
+      return s.type.charAt(0).toUpperCase()+s.type.slice(1)+': '+s.value;
+    }).join(' \u00a0|\u00a0 ');
+
+    var header = document.createElement('div');
+    header.className = 'exercise-header';
+    header.addEventListener('click', function(){ toggleCard(m.id); });
+
+    var nameSpan = document.createElement('span');
+    nameSpan.className = 'exercise-name'; nameSpan.textContent = m.name;
+    var metaSpan = document.createElement('span');
+    metaSpan.className = 'exercise-meta'; metaSpan.textContent = metaStr;
+    var chev = document.createElement('span');
+    chev.className = 'chevron'; chev.innerHTML = '&#9660;';
+
+    header.appendChild(nameSpan); header.appendChild(metaSpan); header.appendChild(chev);
+
+    var body = document.createElement('div'); body.className = 'exercise-body';
+
+    // Settings pills
+    if (m.settings && m.settings.length) {
+      var pillsDiv = document.createElement('div'); pillsDiv.className = 'machine-settings';
+      m.settings.forEach(function(s){
+        var pill = document.createElement('span'); pill.className = 'setting-pill';
+        pill.innerHTML = '<span class="pill-label">' + s.type + ':</span> ' + s.value;
+        pillsDiv.appendChild(pill);
+      });
+      body.appendChild(pillsDiv);
+    }
+
+    var instr = document.createElement('div'); instr.className = 'exercise-instruction';
+    instr.innerHTML = '<span class="dot">&#9679;</span>&nbsp; ' + m.defaultSets + ' sets &times; ' + m.defaultReps + ' reps @ ' + m.defaultWeight + ' lbs &nbsp;&mdash;&nbsp; increase weight as you progress';
+    body.appendChild(instr);
+
+    var table = document.createElement('table'); table.className = 'sets-table';
+    table.innerHTML = '<thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead>';
+    var tbody = document.createElement('tbody'); tbody.id = 'tbody-' + m.id;
+    table.appendChild(tbody); body.appendChild(table);
+
+    var addBtn = document.createElement('button'); addBtn.className = 'add-set-btn';
+    addBtn.textContent = '+ Add Set';
+    addBtn.addEventListener('click', function(){ addSet(m.id); });
+    body.appendChild(addBtn);
+
+    var notesDiv = document.createElement('div'); notesDiv.className = 'notes-area';
+    var notesTA  = document.createElement('textarea');
+    notesTA.id = 'notes-' + m.id; notesTA.placeholder = 'Notes...';
+    notesTA.addEventListener('input', autoDraft);
+    notesDiv.appendChild(notesTA); body.appendChild(notesDiv);
+
+    card.appendChild(header); card.appendChild(body);
+    container.appendChild(card);
+
+    // Add chart tab
+    var tab = document.createElement('button');
+    tab.className = 'chart-tab'; tab.dataset.ex = m.id; tab.dataset.custom = '1';
+    tab.textContent = m.name.split(' ').slice(0,2).join(' ');
+    tab.addEventListener('click', function(){
+      document.querySelectorAll('.chart-tab').forEach(function(b){ b.classList.remove('active'); });
+      tab.classList.add('active'); renderChart();
+    });
+    chartTabsEl.appendChild(tab);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════════════════════════
+var THEME_KEY = 'scottfit_theme';
+
+function getTheme() {
+  var stored = localStorage.getItem(THEME_KEY);
+  if (stored) return stored;
+  // Respect OS preference if no stored choice
+  return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  var icon  = document.getElementById('themeIcon');
+  var label = document.getElementById('themeLabel');
+  var meta  = document.getElementById('themeColorMeta');
+  if (theme === 'light') {
+    if (icon)  icon.textContent  = '🌙';
+    if (label) label.textContent = 'Dark';
+    if (meta)  meta.setAttribute('content','#f4f4f0');
+  } else {
+    if (icon)  icon.textContent  = '☀️';
+    if (label) label.textContent = 'Light';
+    if (meta)  meta.setAttribute('content','#0f0f0d');
+  }
+  if (chartInstance) renderChart();
+}
+
+function toggleTheme() {
+  var current = document.documentElement.getAttribute('data-theme') || 'dark';
+  var next    = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function(){
+  // Apply saved/OS theme immediately
+  applyTheme(getTheme());
+
+  document.getElementById('sessionDate').value = today();
+  document.getElementById('todayLabel').textContent =
+    new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+
+  // Wire note textareas for auto-draft (built-ins)
+  BUILTIN_EXERCISES.forEach(function(exId){
+    var el = document.getElementById('notes-' + exId);
+    if (el) el.addEventListener('input', autoDraft);
+  });
+
+  // Chart tab listeners (built-in tabs only; custom added dynamically)
+  document.querySelectorAll('.chart-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.chart-tab').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active'); renderChart();
+    });
+  });
+  document.querySelectorAll('.metric-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.metric-tab').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active'); renderChart();
+    });
+  });
+
+  // Render custom machine cards first (so DOM exists for populateFromData)
+  renderCustomMachineCards();
+
+  // Inject editable settings pills into built-in exercise cards
+  ['chest-press','row','leg-curl','leg-press','leg-ext'].forEach(function(exId){
+    var body = document.querySelector('#card-' + exId + ' .exercise-body');
+    if (!body) return;
+    // Create pills container before instruction badge
+    var pillsDiv = document.createElement('div');
+    pillsDiv.className = 'machine-settings';
+    var instr = body.querySelector('.exercise-instruction');
+    body.insertBefore(pillsDiv, instr || body.firstChild);
+    // Render initial meta in header too
+    refreshBuiltinCardMeta(exId);
+  });
+
+  // Build weight source dropdown
+  buildWeightSourceDropdown();
+
+  // Populate from draft or seed from last session weights
+  var draft = getDraft();
+  if (draft) {
+    populateFromData(draft);
+  } else {
+    // Seed set rows using last-session weights as defaults
+    populateFromData(null);
+  }
+
+  updateStats(); renderHistory(); renderChart();
+
+  // Open cardio and first strength card by default
+  document.getElementById('card-cardio').classList.add('open');
+  document.getElementById('card-chest-press').classList.add('open');
+});
+</script>
+</body>
+</html>
