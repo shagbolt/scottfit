@@ -319,6 +319,25 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
   .sets-table th:nth-child(2){width:80px;}
 }
 
+/* ── Sticky save bar on mobile ── */
+#stickyBar{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;
+  padding:.6rem 1rem max(env(safe-area-inset-bottom),.6rem);
+  background:var(--bg);border-top:1px solid var(--border);
+  display:flex;gap:.6rem;justify-content:space-between;align-items:center;
+}
+#stickyBar .sticky-date{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);}
+#stickyBar .btn-save-sticky{
+  background:var(--accent);color:#0f0f0d;font-weight:700;font-size:.92rem;
+  border:none;border-radius:12px;padding:.6rem 1.6rem;cursor:pointer;
+  flex-shrink:0;
+}
+[data-theme="light"] #stickyBar .btn-save-sticky{color:#fff;}
+@media(max-width:720px){
+  #stickyBar{display:flex;}
+  .main{padding-bottom:calc(max(env(safe-area-inset-bottom),.6rem) + 4rem);}
+}
+
 /* ── iOS: prevent zoom on input focus (font-size >= 16px fix) ── */
 @media screen and (max-width:768px){
   .sets-table input[type="number"],
@@ -358,6 +377,7 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
   <div class="session-bar">
     <label for="sessionDate">Session date:</label>
     <input type="date" id="sessionDate">
+    <span id="sessionSavedBadge" style="display:none;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--accent);background:rgba(212,240,96,.12);border:1px solid rgba(212,240,96,.3);border-radius:10px;padding:.2rem .6rem;">✓ saved</span>
   </div>
 
   <!-- Last-session weight loader -->
@@ -395,12 +415,13 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
       </div>
       <div class="exercise-body">
         <table class="sets-table"><thead><tr><th>#</th><th>Weight</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-sts"></tbody></table>
-        <button class="add-set-btn" onclick="addSet('sts')">+ Add Set</button>
+        <button type="button" class="add-set-btn" onclick="addSet('sts')">+ Add Set</button>
         <div class="notes-area"><textarea id="notes-sts" placeholder="Notes..."></textarea></div>
       </div>
     </div>
   </div>
 
+  <hr style="border:none;border-top:1px solid var(--border);margin:.2rem 0 1.6rem;opacity:.5;">
   <!-- STRENGTH -->
   <div class="exercise-section">
     <div class="section-header">
@@ -422,7 +443,7 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
         <div class="exercise-body">
           <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
           <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-chest-press"></tbody></table>
-          <button class="add-set-btn" onclick="addSet('chest-press')">+ Add Set</button>
+          <button type="button" class="add-set-btn" onclick="addSet('chest-press')">+ Add Set</button>
           <div class="notes-area"><textarea id="notes-chest-press" placeholder="Notes..."></textarea></div>
         </div>
       </div>
@@ -435,7 +456,7 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
         <div class="exercise-body">
           <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
           <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-row"></tbody></table>
-          <button class="add-set-btn" onclick="addSet('row')">+ Add Set</button>
+          <button type="button" class="add-set-btn" onclick="addSet('row')">+ Add Set</button>
           <div class="notes-area"><textarea id="notes-row" placeholder="Notes..."></textarea></div>
         </div>
       </div>
@@ -448,7 +469,7 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
         <div class="exercise-body">
           <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
           <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-leg-curl"></tbody></table>
-          <button class="add-set-btn" onclick="addSet('leg-curl')">+ Add Set</button>
+          <button type="button" class="add-set-btn" onclick="addSet('leg-curl')">+ Add Set</button>
           <div class="notes-area"><textarea id="notes-leg-curl" placeholder="Notes..."></textarea></div>
         </div>
       </div>
@@ -461,7 +482,7 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
         <div class="exercise-body">
           <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
           <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-leg-press"></tbody></table>
-          <button class="add-set-btn" onclick="addSet('leg-press')">+ Add Set</button>
+          <button type="button" class="add-set-btn" onclick="addSet('leg-press')">+ Add Set</button>
           <div class="notes-area"><textarea id="notes-leg-press" placeholder="Notes..."></textarea></div>
         </div>
       </div>
@@ -474,7 +495,7 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
         <div class="exercise-body">
           <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
           <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-leg-ext"></tbody></table>
-          <button class="add-set-btn" onclick="addSet('leg-ext')">+ Add Set</button>
+          <button type="button" class="add-set-btn" onclick="addSet('leg-ext')">+ Add Set</button>
           <div class="notes-area"><textarea id="notes-leg-ext" placeholder="Notes..."></textarea></div>
         </div>
       </div>
@@ -483,6 +504,7 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
     <div id="customMachineCards"></div>
   </div>
 
+  <hr style="border:none;border-top:1px solid var(--border);margin:.2rem 0 1.6rem;opacity:.5;">
   <!-- BALANCE -->
   <div class="exercise-section">
     <div class="section-label">Balance</div>
@@ -548,17 +570,17 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
     </div>
     <div class="chart-section-body" id="chartSectionBody">
     <div class="chart-tabs" id="chartTabs">
-      <button class="chart-tab active" data-ex="chest-press">Chest Press</button>
-      <button class="chart-tab" data-ex="row">Row</button>
-      <button class="chart-tab" data-ex="leg-curl">Leg Curl</button>
-      <button class="chart-tab" data-ex="leg-press">Leg Press</button>
-      <button class="chart-tab" data-ex="leg-ext">Leg Ext</button>
-      <button class="chart-tab" data-ex="sts">STS</button>
+      <button type="button" class="chart-tab active" data-ex="chest-press">Chest Press</button>
+      <button type="button" class="chart-tab" data-ex="row">Row</button>
+      <button type="button" class="chart-tab" data-ex="leg-curl">Leg Curl</button>
+      <button type="button" class="chart-tab" data-ex="leg-press">Leg Press</button>
+      <button type="button" class="chart-tab" data-ex="leg-ext">Leg Ext</button>
+      <button type="button" class="chart-tab" data-ex="sts">STS</button>
     </div>
     <div class="metric-tabs" id="metricTabs">
-      <button class="metric-tab active" data-metric="max_weight">Max Weight</button>
-      <button class="metric-tab" data-metric="total_volume">Total Volume</button>
-      <button class="metric-tab" data-metric="total_reps">Total Reps</button>
+      <button type="button" class="metric-tab active" data-metric="max_weight">Max Weight</button>
+      <button type="button" class="metric-tab" data-metric="total_volume">Total Volume</button>
+      <button type="button" class="metric-tab" data-metric="total_reps">Total Reps</button>
     </div>
     <div class="chart-wrap">
       <canvas id="progressChart"></canvas>
@@ -579,572 +601,10 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
 </div><!-- /main -->
 
 <div class="toast" id="toast"></div>
-
-</script>
-<style>
-/* ── DARK theme (default) ── */
-:root,[data-theme="dark"] {
-  --bg:#0f0f0d; --surface:#1a1a16; --surface2:#242420; --surface3:#2e2e28;
-  --accent:#d4f060; --accent2:#f0a030; --accent3:#60c4f0;
-  --text:#e8e8e0; --muted:#888882; --border:#2e2e28; --red:#f05050;
-  --noise-opacity:.18;
-  --logo-dot-color:#d4f060;
-}
-/* ── LIGHT theme ── */
-[data-theme="light"] {
-  --bg:#f4f4f0; --surface:#ffffff; --surface2:#eeeee8; --surface3:#e0e0d8;
-  --accent:#5a8a00; --accent2:#c07000; --accent3:#0070a8;
-  --text:#1a1a14; --muted:#888878; --border:#d0d0c4; --red:#cc2020;
-  --noise-opacity:.06;
-  --logo-dot-color:#5a8a00;
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-*,*::before,*::after{transition:background-color .25s,border-color .25s,color .25s;}
-/* don't animate transforms or opacity (breaks chevron, toast etc) */
-.chevron,.toast,.modal-overlay,.btn{transition:background-color .25s,border-color .25s,color .25s,transform .2s,opacity .3s;}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;min-height:-webkit-fill-available;}
-/* Safe area for iPhone notch / home bar */
-header{padding-top:max(1.2rem,env(safe-area-inset-top));}
-.main{padding-bottom:max(1.2rem,env(safe-area-inset-bottom));}
-.toast{bottom:max(1.4rem,calc(env(safe-area-inset-bottom) + 0.8rem));right:max(1.4rem,env(safe-area-inset-right));}
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:var(--noise-opacity);
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");}
-header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;justify-content:space-between;gap:.8rem;flex-wrap:wrap;}
-.logo{font-family:'Bebas Neue',cursive;font-size:clamp(1.8rem,5vw,3.2rem);letter-spacing:.05em;line-height:1;}
-.logo span{color:var(--accent);}
-.date-badge{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
-.header-btns{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;}
-.main{max-width:860px;margin:0 auto;padding:1.2rem 1.5rem;}
-.btn{font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;padding:.5rem 1rem;border-radius:4px;border:none;cursor:pointer;transition:all .15s;letter-spacing:.02em;}
-.btn-primary{background:var(--accent);color:#0f0f0d;}
-.btn-primary:hover{background:#c8e850;transform:translateY(-1px);}
-.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
-.btn-ghost:hover{border-color:var(--text);color:var(--text);}
-.btn-orange{background:transparent;color:var(--accent2);border:1px solid var(--accent2);}
-.btn-orange:hover{background:rgba(240,160,48,.1);}
-.btn-blue{background:transparent;color:var(--accent3);border:1px solid var(--accent3);}
-.btn-blue:hover{background:rgba(96,196,240,.1);}
-.btn-danger{background:transparent;color:var(--red);border:1px solid transparent;padding:.22rem .45rem;font-size:.72rem;cursor:pointer;}
-.btn-danger:hover{background:rgba(240,80,80,.1);}
-.btn-sm{padding:.3rem .65rem;font-size:.75rem;}
-.add-set-btn{margin-top:.5rem;font-size:.72rem;color:var(--accent);background:none;border:1px dashed rgba(212,240,96,.3);border-radius:3px;padding:.28rem .7rem;cursor:pointer;width:100%;transition:all .15s;font-family:'DM Sans',sans-serif;}
-.add-set-btn:hover{background:rgba(212,240,96,.05);border-color:var(--accent);}
-
-/* Stats strip */
-.stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:1.4rem;}
-.stat{background:var(--surface);padding:.8rem;text-align:center;}
-.stat-value{font-family:'Bebas Neue',cursive;font-size:1.9rem;color:var(--accent);line-height:1;}
-.stat-label{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:.2rem;}
-
-/* Session bar */
-.session-bar{display:flex;gap:.75rem;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;}
-.session-bar label{font-size:.78rem;color:var(--muted);}
-.session-bar input[type="date"]{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:.82rem;padding:.45rem .8rem;border-radius:4px;cursor:pointer;}
-.session-bar input[type="date"]:focus{outline:none;border-color:var(--accent);}
-
-/* Last-session banner */
-.last-session-bar{display:flex;align-items:center;gap:.6rem;margin-bottom:1.3rem;flex-wrap:wrap;padding:.55rem .75rem;background:rgba(96,196,240,.07);border:1px solid rgba(96,196,240,.2);border-radius:5px;}
-.last-session-bar label{font-size:.75rem;color:var(--accent3);}
-.last-session-bar select{background:var(--surface2);border:1px solid rgba(96,196,240,.25);color:var(--text);font-family:'DM Mono',monospace;font-size:.75rem;padding:.3rem .5rem;border-radius:4px;cursor:pointer;max-width:180px;}
-.last-session-bar select:focus{outline:none;border-color:var(--accent3);}
-.last-session-bar .hint{font-size:.68rem;color:var(--muted);font-family:'DM Mono',monospace;}
-
-.section-label{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:.65rem;padding-bottom:.35rem;border-bottom:1px solid var(--border);}
-.exercise-section{margin-bottom:1.8rem;}
-.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem;padding-bottom:.35rem;border-bottom:1px solid var(--border);}
-.section-header .section-label{margin:0;border:none;padding:0;}
-
-/* Cards */
-.exercise-card,.checklist-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:.6rem;overflow:hidden;transition:border-color .2s;}
-.exercise-header{display:flex;align-items:center;gap:.65rem;padding:.65rem .9rem;cursor:pointer;user-select:none;}
-.exercise-header:hover{background:var(--surface2);}
-.exercise-name{font-size:.92rem;font-weight:500;flex:1;}
-.exercise-meta{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);}
-.chevron{color:var(--muted);font-size:.72rem;transition:transform .2s;flex-shrink:0;}
-.exercise-card.open>.exercise-header .chevron,.checklist-card.open>.exercise-header .chevron{transform:rotate(180deg);}
-.exercise-body{display:none;padding:.2rem .9rem .85rem;border-top:1px solid var(--border);}
-.exercise-card.open>.exercise-body,.checklist-card.open>.exercise-body{display:block;}
-
-/* Custom exercise header actions */
-.ex-header-actions{display:flex;gap:.3rem;align-items:center;flex-shrink:0;}
-
-/* Machine settings badge */
-.machine-settings{display:flex;flex-wrap:wrap;gap:.4rem;margin:.55rem 0 .2rem;}
-.setting-pill{display:inline-flex;align-items:center;gap:.3rem;background:rgba(240,160,48,.09);border:1px solid rgba(240,160,48,.22);border-radius:3px;padding:.18rem .55rem;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--accent2);}
-.setting-pill .pill-label{color:var(--muted);}
-
-/* Sets table */
-.sets-table{width:100%;border-collapse:collapse;margin-top:.6rem;font-size:.83rem;}
-.sets-table th{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:.32rem .45rem;border-bottom:1px solid var(--border);}
-.sets-table td{padding:.28rem .45rem;}
-.sets-table tbody tr:hover td{background:var(--surface2);}
-.set-num{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);width:26px;}
-.sets-table input[type="number"]{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-family:'DM Mono',monospace;font-size:.83rem;width:66px;padding:.13rem .22rem;transition:border-color .15s;}
-.sets-table input[type="number"]:focus{outline:none;border-bottom-color:var(--accent);}
-.bw-label{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--muted);font-style:italic;}
-.last-wt{font-family:'DM Mono',monospace;font-size:.62rem;color:rgba(212,240,96,.45);padding-left:.2rem;}
-
-/* Cardio */
-.cardio-fields{display:flex;gap:1rem;margin-top:.7rem;flex-wrap:wrap;}
-.cardio-field{display:flex;flex-direction:column;gap:.28rem;}
-.cardio-field label{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
-.cardio-field input{background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Mono',monospace;font-size:.95rem;padding:.42rem .65rem;width:105px;transition:border-color .15s;}
-.cardio-field input:focus{outline:none;border-color:var(--accent);}
-
-/* Checklist */
-.check-list{padding:.4rem 0;}
-.check-item{display:flex;align-items:center;gap:.7rem;padding:.5rem .2rem;cursor:pointer;border-radius:4px;transition:background .1s;}
-.check-item:hover{background:var(--surface2);}
-.check-item input[type="checkbox"]{display:none;}
-.check-box{width:21px;height:21px;border:2px solid var(--border);border-radius:4px;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:.82rem;}
-.check-item input[type="checkbox"]:checked~.check-box{background:var(--accent);border-color:var(--accent);}
-.check-item input[type="checkbox"]:checked~.check-box::after{content:'✓';font-weight:700;color:#0f0f0d;}
-.check-item input[type="checkbox"]:checked~.check-label{color:var(--muted);text-decoration:line-through;}
-.check-label{font-size:.88rem;color:var(--text);}
-.check-label em{font-style:normal;color:var(--muted);font-size:.78rem;}
-
-/* Exercise instruction */
-.exercise-instruction{display:inline-flex;align-items:center;gap:.32rem;background:rgba(212,240,96,.07);border:1px solid rgba(212,240,96,.18);border-radius:3px;padding:.28rem .6rem;margin:.55rem 0 .1rem;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--accent);letter-spacing:.04em;}
-.exercise-instruction .dot{color:var(--accent2);}
-
-.notes-area{margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border);}
-.notes-area textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.76rem;padding:.42rem .55rem;resize:none;height:44px;transition:border-color .15s;}
-.notes-area textarea:focus{outline:none;border-color:var(--accent);}
-
-/* Charts */
-.chart-tabs{display:flex;gap:.35rem;margin-bottom:.9rem;flex-wrap:wrap;}
-.chart-tab{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.06em;text-transform:uppercase;padding:.32rem .7rem;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;}
-.chart-tab:hover{border-color:var(--text);color:var(--text);}
-.chart-tab.active{background:var(--accent);color:#0f0f0d;border-color:var(--accent);font-weight:700;}
-.metric-tabs{display:flex;gap:.35rem;margin-bottom:.85rem;flex-wrap:wrap;}
-.metric-tab{font-size:.7rem;padding:.25rem .6rem;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
-.metric-tab.active{background:var(--surface2);color:var(--text);border-color:var(--muted);}
-.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1rem;min-height:80px;}
-.chart-wrap canvas{max-height:230px;}
-.chart-empty{text-align:center;color:var(--muted);font-size:.8rem;padding:2.2rem 1rem;}
-
-/* History */
-.history-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:.55rem 0;margin-bottom:.35rem;}
-.history-list{display:none;}
-.history-list.open{display:block;}
-.history-item{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:.6rem .85rem;margin-bottom:.4rem;display:flex;align-items:center;gap:.85rem;cursor:pointer;transition:border-color .15s;}
-.history-item:hover{border-color:var(--accent2);}
-.history-date{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--accent2);min-width:88px;}
-.history-summary{font-size:.75rem;color:var(--muted);flex:1;}
-
-/* Toast */
-.toast{position:fixed;bottom:1.4rem;right:1.4rem;background:var(--accent);color:#0f0f0d;font-weight:700;font-size:.82rem;padding:.65rem 1.1rem;border-radius:4px;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);z-index:10000;}
-.toast.show{transform:translateY(0);opacity:1;}
-
-/* ── MODALS ──────────────────────────────────────────────────────── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:5000;display:flex;align-items:center;justify-content:center;padding:1rem;}
-.modal-overlay.hidden{display:none;}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.4rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
-.modal h2{font-family:'DM Mono',monospace;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:1.1rem;}
-.modal-row{margin-bottom:.85rem;}
-.modal-row label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:.3rem;font-family:'DM Mono',monospace;letter-spacing:.06em;text-transform:uppercase;}
-.modal-row input[type="text"],.modal-row select,.modal-row textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.88rem;padding:.5rem .7rem;transition:border-color .15s;}
-.modal-row input[type="text"]:focus,.modal-row select:focus,.modal-row textarea:focus{outline:none;border-color:var(--accent);}
-.modal-row textarea{resize:vertical;min-height:80px;}
-.modal-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.2rem;}
-.setting-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.45rem;}
-.setting-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Mono',monospace;font-size:.85rem;padding:.38rem .6rem;}
-.setting-row input:focus{outline:none;border-color:var(--accent);}
-.setting-row select{background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Mono',monospace;font-size:.82rem;padding:.38rem .5rem;}
-.add-setting-btn{font-size:.72rem;color:var(--accent3);background:none;border:1px dashed rgba(96,196,240,.3);border-radius:3px;padding:.25rem .6rem;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:.3rem;}
-.add-setting-btn:hover{background:rgba(96,196,240,.06);border-color:var(--accent3);}
-.divider{height:1px;background:var(--border);margin:1rem 0;}
-
-/* Custom machines section */
-.custom-ex-card{background:var(--surface);border:1px solid rgba(96,196,240,.2);border-radius:6px;margin-bottom:.6rem;overflow:hidden;}
-.custom-ex-card .exercise-header{border-bottom:none;}
-
-/* Import area */
-.import-area{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Mono',monospace;font-size:.75rem;padding:.55rem .7rem;resize:vertical;min-height:110px;transition:border-color .15s;}
-.import-area:focus{outline:none;border-color:var(--accent3);}
-
-/* Light mode overrides */
-[data-theme="light"] .logo span { color: var(--logo-dot-color); }
-[data-theme="light"] .stat-value { color: var(--accent); }
-[data-theme="light"] .btn-primary { background:var(--accent); color:#fff; }
-[data-theme="light"] .btn-primary:hover { background:#4a7800; }
-[data-theme="light"] .btn-orange { color:var(--accent2); border-color:var(--accent2); }
-[data-theme="light"] .btn-orange:hover { background:rgba(192,112,0,.1); }
-[data-theme="light"] .btn-blue { color:var(--accent3); border-color:var(--accent3); }
-[data-theme="light"] .btn-blue:hover { background:rgba(0,112,168,.1); }
-[data-theme="light"] .add-set-btn { color:var(--accent); border-color:rgba(90,138,0,.35); }
-[data-theme="light"] .add-set-btn:hover { background:rgba(90,138,0,.06); border-color:var(--accent); }
-[data-theme="light"] .chart-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
-[data-theme="light"] .exercise-instruction { background:rgba(90,138,0,.07); border-color:rgba(90,138,0,.2); color:var(--accent); }
-[data-theme="light"] .exercise-instruction .dot { color:var(--accent2); }
-[data-theme="light"] .last-session-bar { background:rgba(0,112,168,.06); border-color:rgba(0,112,168,.2); }
-[data-theme="light"] .last-session-bar label { color:var(--accent3); }
-[data-theme="light"] .setting-pill { background:rgba(192,112,0,.08); border-color:rgba(192,112,0,.22); color:var(--accent2); }
-[data-theme="light"] .check-item input[type="checkbox"]:checked~.check-box { background:var(--accent); border-color:var(--accent); }
-[data-theme="light"] .check-item input[type="checkbox"]:checked~.check-box::after { color:#fff; }
-[data-theme="light"] .check-item input[type="checkbox"]:checked~.check-label { color:var(--muted); }
-[data-theme="light"] .history-item:hover { border-color:var(--accent2); }
-[data-theme="light"] .history-date { color:var(--accent2); }
-[data-theme="light"] .toast { background:var(--accent); color:#fff; }
-[data-theme="light"] .modal { background:var(--surface); border-color:var(--border); }
-[data-theme="light"] .modal h2 { color:var(--accent); }
-[data-theme="light"] .sets-table input[type="number"]:focus { border-bottom-color:var(--accent); }
-[data-theme="light"] .last-wt { color:rgba(90,138,0,.5); }
-[data-theme="light"] #themeToggle { background:var(--surface2); border-color:var(--border); color:var(--text); }
-
-/* Theme toggle button */
-#themeToggle {
-  background:var(--surface2); border:1px solid var(--border); border-radius:20px;
-  padding:.28rem .7rem; font-size:.9rem; cursor:pointer; line-height:1;
-  color:var(--text); display:flex; align-items:center; gap:.3rem;
-}
-#themeToggle:hover { border-color:var(--muted); }
-#themeToggle .toggle-label { font-family:'DM Mono',monospace; font-size:.62rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
-
-/* ── Save button — prominent green pill ── */
-.btn-save{
-  background:var(--accent);color:#0f0f0d;font-weight:700;
-  padding:.5rem 1.2rem;border-radius:20px;font-size:.88rem;letter-spacing:.03em;
-  box-shadow:0 2px 8px rgba(212,240,96,.25);
-}
-.btn-save:hover{background:#c8e850;transform:translateY(-1px);box-shadow:0 4px 12px rgba(212,240,96,.35);}
-[data-theme="light"] .btn-save{box-shadow:0 2px 8px rgba(90,138,0,.2);}
-
-/* ── Mobile-first number inputs: larger tap targets ── */
-.sets-table input[type="number"]{
-  width:72px;font-size:.95rem;padding:.3rem .3rem;
-  -moz-appearance:textfield;
-}
-.sets-table input[type="number"]::-webkit-inner-spin-button,
-.sets-table input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
-/* Wider weight column, larger reps column */
-.sets-table th:nth-child(2){width:90px;}
-.sets-table th:nth-child(3){width:70px;}
-/* Bigger row height for finger tapping */
-.sets-table td{padding:.45rem .45rem;}
-.sets-table tbody tr{border-bottom:1px solid var(--border);}
-
-/* ── Add Set button — taller for fat-finger tapping ── */
-.add-set-btn{
-  padding:.55rem .7rem;font-size:.8rem;margin-top:.65rem;
-  border-radius:6px;letter-spacing:.04em;
-}
-
-/* ── Exercise card open state: accent left border ── */
-.exercise-card.open{border-color:var(--accent);border-left-width:3px;}
-.checklist-card.open{border-color:var(--accent);border-left-width:3px;}
-[data-theme="light"] .exercise-card.open{border-color:var(--accent);}
-[data-theme="light"] .checklist-card.open{border-color:var(--accent);}
-
-/* ── Larger check targets for checklist ── */
-.check-item{padding:.65rem .3rem;min-height:44px;}
-.check-box{width:26px;height:26px;border-radius:6px;font-size:.95rem;}
-
-/* ── Cardio inputs: larger on mobile ── */
-.cardio-field input{font-size:1.1rem;padding:.5rem .7rem;width:110px;}
-
-/* ── Session date input: larger ── */
-.session-bar input[type="date"]{font-size:.9rem;padding:.5rem .9rem;}
-
-/* ── Last-session bar: compact on small screens ── */
-.last-session-bar .hint{display:none;}  /* hide hint text on all, show on wide */
-@media(min-width:520px){.last-session-bar .hint{display:inline;}}
-
-/* ── Section labels with exercise count badge ── */
-.section-badge{
-  font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.06em;
-  background:var(--surface2);border:1px solid var(--border);
-  border-radius:10px;padding:.1rem .45rem;color:var(--muted);margin-left:.4rem;
-}
-
-/* ── Open all / Close all buttons ── */
-.section-toggle-btn{
-  font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;
-  background:none;border:none;color:var(--muted);cursor:pointer;padding:.1rem .3rem;
-}
-.section-toggle-btn:hover{color:var(--text);}
-
-/* ── Collapsible chart section ── */
-.chart-section-toggle{
-  display:flex;align-items:center;justify-content:space-between;
-  cursor:pointer;padding:.4rem 0;
-}
-.chart-section-body{display:none;}
-.chart-section-body.open{display:block;}
-
-/* ── Mobile: stack header neatly ── */
-@media(max-width:580px){
-  .main{padding:.9rem 1rem;}
-  header{padding:.75rem 1rem .6rem;gap:.5rem;}
-  .header-btns{gap:.4rem;}
-  .logo{font-size:2rem;}
-  .btn-sm{padding:.35rem .6rem;font-size:.72rem;}
-  .btn-save{padding:.45rem 1rem;font-size:.82rem;}
-  .modal{padding:1rem;}
-  .sets-table input[type="number"]{width:68px;font-size:.9rem;}
-  .stat-value{font-size:1.6rem;}
-  .sets-table th:nth-child(2){width:80px;}
-}
-
-/* ── iOS: prevent zoom on input focus (font-size >= 16px fix) ── */
-@media screen and (max-width:768px){
-  .sets-table input[type="number"],
-  .cardio-field input,
-  .session-bar input[type="date"],
-  .modal-row input[type="text"],
-  .setting-row input{font-size:16px;}
-}
-</style>
-</head>
-<body>
-
-<header>
-  <div>
-    <div class="logo">SCOTT<span>.</span>FIT</div>
-    <div class="date-badge" id="todayLabel"></div>
-  </div>
-  <div class="header-btns">
-    <button type="button" id="themeToggle" onclick="toggleTheme()" title="Toggle light / dark mode">
-      <span id="themeIcon">☀️</span><span class="toggle-label" id="themeLabel">Light</span>
-    </button>
-    <button type="button" class="btn btn-ghost btn-sm" onclick="clearSession()">Clear</button>
-    <button type="button" class="btn btn-ghost btn-sm" onclick="openSettingsModal()">⚙ Machines</button>
-    <button type="button" class="btn btn-blue btn-sm" onclick="openDataModal()">⇅ Data</button>
-    <button type="button" class="btn btn-save" onclick="saveSession()">💾 Save</button>
-  </div>
-</header>
-
-<div class="main">
-
-  <div class="stats-strip">
-    <div class="stat"><div class="stat-value" id="statSessions">0</div><div class="stat-label">Sessions</div></div>
-    <div class="stat"><div class="stat-value" id="statStreak">0</div><div class="stat-label">Day Streak</div></div>
-    <div class="stat"><div class="stat-value" id="statLastDate" style="font-size:1rem;padding-top:.3rem;">—</div><div class="stat-label">Last Workout</div></div>
-  </div>
-
-  <div class="session-bar">
-    <label for="sessionDate">Session date:</label>
-    <input type="date" id="sessionDate">
-  </div>
-
-  <!-- Last-session weight loader -->
-  <div class="last-session-bar">
-    <label>Pre-fill weights from:</label>
-    <select id="weightSourceSelect" onchange="applyWeightSource()">
-      <option value="last">Last session</option>
-    </select>
-    <span class="hint">— weights auto-filled; edit freely</span>
-  </div>
-
-  <!-- WARM UP -->
-  <div class="exercise-section">
-    <div class="section-label">Warm Up</div>
-    <div class="exercise-card" id="card-cardio">
-      <div class="exercise-header" onclick="toggleCard('cardio')">
-        <span class="exercise-name">Cardio Bike — LF Recumbent</span>
-        <span class="exercise-meta">Seat: 23 &nbsp;|&nbsp; Level 1–2 &nbsp;|&nbsp; Goal: 15 min or 2 miles</span>
-        <span class="chevron">&#9660;</span>
-      </div>
-      <div class="exercise-body">
-        <div class="cardio-fields">
-          <div class="cardio-field"><label>Time (min)</label><input type="number" id="cardio-time" min="0" step="1" placeholder="0" inputmode="numeric" oninput="autoDraft()"></div>
-          <div class="cardio-field"><label>Distance (miles)</label><input type="number" id="cardio-miles" min="0" step="0.1" placeholder="0.0" inputmode="decimal" oninput="autoDraft()"></div>
-          <div class="cardio-field"><label>Level</label><input type="number" id="cardio-level" min="1" step="1" placeholder="1" inputmode="numeric" oninput="autoDraft()"></div>
-        </div>
-        <div class="notes-area"><textarea id="notes-cardio" placeholder="Notes..." oninput="autoDraft()"></textarea></div>
-      </div>
-    </div>
-    <div class="exercise-card" id="card-sts">
-      <div class="exercise-header" onclick="toggleCard('sts')">
-        <span class="exercise-name">Sit-to-Stand (Chair Stand)</span>
-        <span class="exercise-meta">Goal: 10 reps</span>
-        <span class="chevron">&#9660;</span>
-      </div>
-      <div class="exercise-body">
-        <table class="sets-table"><thead><tr><th>#</th><th>Weight</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-sts"></tbody></table>
-        <button class="add-set-btn" onclick="addSet('sts')">+ Add Set</button>
-        <div class="notes-area"><textarea id="notes-sts" placeholder="Notes..."></textarea></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- STRENGTH -->
-  <div class="exercise-section">
-    <div class="section-header">
-      <div class="section-label">Strength</div>
-      <div>
-        <button type="button" class="section-toggle-btn" onclick="toggleAllStrength(true)">expand all</button>
-        <span style="color:var(--border)">|</span>
-        <button type="button" class="section-toggle-btn" onclick="toggleAllStrength(false)">collapse all</button>
-      </div>
-    </div>
-    <div id="strengthCards">
-      <!-- Built-in machines -->
-      <div class="exercise-card" id="card-chest-press">
-        <div class="exercise-header" onclick="toggleCard('chest-press')">
-          <span class="exercise-name">Chest Press</span>
-          <span class="exercise-meta">Arm: 2 &nbsp;|&nbsp; Seat: 4–5</span>
-          <span class="chevron">&#9660;</span>
-        </div>
-        <div class="exercise-body">
-          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
-          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-chest-press"></tbody></table>
-          <button class="add-set-btn" onclick="addSet('chest-press')">+ Add Set</button>
-          <div class="notes-area"><textarea id="notes-chest-press" placeholder="Notes..."></textarea></div>
-        </div>
-      </div>
-      <div class="exercise-card" id="card-row">
-        <div class="exercise-header" onclick="toggleCard('row')">
-          <span class="exercise-name">Row</span>
-          <span class="exercise-meta">Chest: 3 &nbsp;|&nbsp; Seat: 5</span>
-          <span class="chevron">&#9660;</span>
-        </div>
-        <div class="exercise-body">
-          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
-          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-row"></tbody></table>
-          <button class="add-set-btn" onclick="addSet('row')">+ Add Set</button>
-          <div class="notes-area"><textarea id="notes-row" placeholder="Notes..."></textarea></div>
-        </div>
-      </div>
-      <div class="exercise-card" id="card-leg-curl">
-        <div class="exercise-header" onclick="toggleCard('leg-curl')">
-          <span class="exercise-name">Seated Leg Curl</span>
-          <span class="exercise-meta"></span>
-          <span class="chevron">&#9660;</span>
-        </div>
-        <div class="exercise-body">
-          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
-          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-leg-curl"></tbody></table>
-          <button class="add-set-btn" onclick="addSet('leg-curl')">+ Add Set</button>
-          <div class="notes-area"><textarea id="notes-leg-curl" placeholder="Notes..."></textarea></div>
-        </div>
-      </div>
-      <div class="exercise-card" id="card-leg-press">
-        <div class="exercise-header" onclick="toggleCard('leg-press')">
-          <span class="exercise-name">Seated Leg Press</span>
-          <span class="exercise-meta">Seat: 10</span>
-          <span class="chevron">&#9660;</span>
-        </div>
-        <div class="exercise-body">
-          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
-          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-leg-press"></tbody></table>
-          <button class="add-set-btn" onclick="addSet('leg-press')">+ Add Set</button>
-          <div class="notes-area"><textarea id="notes-leg-press" placeholder="Notes..."></textarea></div>
-        </div>
-      </div>
-      <div class="exercise-card" id="card-leg-ext">
-        <div class="exercise-header" onclick="toggleCard('leg-ext')">
-          <span class="exercise-name">Leg Extension</span>
-          <span class="exercise-meta"></span>
-          <span class="chevron">&#9660;</span>
-        </div>
-        <div class="exercise-body">
-          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
-          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-leg-ext"></tbody></table>
-          <button class="add-set-btn" onclick="addSet('leg-ext')">+ Add Set</button>
-          <div class="notes-area"><textarea id="notes-leg-ext" placeholder="Notes..."></textarea></div>
-        </div>
-      </div>
-    </div>
-    <!-- Custom machine cards rendered here by JS -->
-    <div id="customMachineCards"></div>
-  </div>
-
-  <!-- BALANCE -->
-  <div class="exercise-section">
-    <div class="section-label">Balance</div>
-    <div class="checklist-card" id="card-balance">
-      <div class="exercise-header" onclick="toggleCard('balance')">
-        <span class="exercise-name">Balance Exercises</span>
-        <span class="exercise-meta">Complete each one</span>
-        <span class="chevron">&#9660;</span>
-      </div>
-      <div class="exercise-body">
-        <div class="check-list">
-          <label class="check-item"><input type="checkbox" id="chk-slb" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">SLB <em>(Single Leg Balance)</em></span></label>
-          <label class="check-item"><input type="checkbox" id="chk-tandem" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Tandem</span></label>
-          <label class="check-item"><input type="checkbox" id="chk-side-stepper" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Side Stepper</span></label>
-          <label class="check-item"><input type="checkbox" id="chk-grapevine" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Grapevine</span></label>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- COOL DOWN -->
-  <div class="exercise-section">
-    <div class="section-label">Cool Down</div>
-    <div class="checklist-card" id="card-cooldown">
-      <div class="exercise-header" onclick="toggleCard('cooldown')">
-        <span class="exercise-name">Cool Down</span>
-        <span class="exercise-meta">1 slow lap on track</span>
-        <span class="chevron">&#9660;</span>
-      </div>
-      <div class="exercise-body">
-        <div class="check-list">
-          <label class="check-item"><input type="checkbox" id="chk-cooldown-lap" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Completed 1 slow lap on track</span></label>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- STRETCHES -->
-  <div class="exercise-section">
-    <div class="section-label">Stretches</div>
-    <div class="checklist-card" id="card-stretches">
-      <div class="exercise-header" onclick="toggleCard('stretches')">
-        <span class="exercise-name">Stretches</span>
-        <span class="exercise-meta">30 sec each side</span>
-        <span class="chevron">&#9660;</span>
-      </div>
-      <div class="exercise-body">
-        <div class="check-list">
-          <label class="check-item"><input type="checkbox" id="chk-cross-arm" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Cross Arm Stretch <em>— each arm, 30 sec</em></span></label>
-          <label class="check-item"><input type="checkbox" id="chk-figure4" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Figure 4 Stretch <em>— each leg, 30 sec</em></span></label>
-          <label class="check-item"><input type="checkbox" id="chk-hamstring" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Hamstring Stretch <em>— each leg, 30 sec</em></span></label>
-          <label class="check-item"><input type="checkbox" id="chk-touch-toes" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Touch Toes Stretch <em>(seated) — each leg, 30 sec</em></span></label>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PROGRESS CHARTS -->
-  <div class="exercise-section">
-    <div class="chart-section-toggle" onclick="toggleChartSection()" id="chartSectionToggle">
-      <div class="section-label" style="margin:0;border:none;padding:0;">Progress Charts</div>
-      <span class="chevron" id="chartChevron" style="color:var(--muted);font-size:.72rem;">&#9660;</span>
-    </div>
-    <div class="chart-section-body" id="chartSectionBody">
-    <div class="chart-tabs" id="chartTabs">
-      <button class="chart-tab active" data-ex="chest-press">Chest Press</button>
-      <button class="chart-tab" data-ex="row">Row</button>
-      <button class="chart-tab" data-ex="leg-curl">Leg Curl</button>
-      <button class="chart-tab" data-ex="leg-press">Leg Press</button>
-      <button class="chart-tab" data-ex="leg-ext">Leg Ext</button>
-      <button class="chart-tab" data-ex="sts">STS</button>
-    </div>
-    <div class="metric-tabs" id="metricTabs">
-      <button class="metric-tab active" data-metric="max_weight">Max Weight</button>
-      <button class="metric-tab" data-metric="total_volume">Total Volume</button>
-      <button class="metric-tab" data-metric="total_reps">Total Reps</button>
-    </div>
-    <div class="chart-wrap">
-      <canvas id="progressChart"></canvas>
-      <div class="chart-empty" id="chartEmpty">Save at least 2 sessions to see your progress chart.</div>
-    </div>
-  </div>
-
-  <!-- HISTORY -->
-  <div class="exercise-section">
-    <div class="history-toggle" onclick="toggleHistory()">
-      <div class="section-label" style="margin:0;border:none;padding:0;">Past Sessions</div>
-      <span class="chevron" id="historyChevron" style="color:var(--muted);font-size:.72rem;">&#9660;</span>
-    </div>
-    <div class="history-list" id="historyList"></div>
-  </div>
-
-</div><!-- /main -->
-
-<div class="toast" id="toast"></div>
+<div id="stickyBar">
+  <span class="sticky-date" id="stickyDateLabel"></span>
+  <button type="button" class="btn-save-sticky" onclick="saveSession()">💾 Save Workout</button>
+</div>
 
 <!-- ══ SETTINGS MODAL (Machines) ══════════════════════════════════════ -->
 <div class="modal-overlay hidden" id="settingsModal">
@@ -1374,6 +834,7 @@ function appendSetRow(exId, num, weight, reps, lastWeight) {
     var wInput = document.createElement('input');
     wInput.type = 'number'; wInput.min = '0'; wInput.step = '5';
     wInput.inputMode = 'decimal';
+    wInput.autocomplete = 'off';
     wInput.placeholder = '0'; wInput.value = w;
     wInput.addEventListener('input', autoDraft);
     wInput.addEventListener('focus', function(){ this.select(); });
@@ -1392,6 +853,7 @@ function appendSetRow(exId, num, weight, reps, lastWeight) {
   var rInput = document.createElement('input');
   rInput.type = 'number'; rInput.min = '0';
   rInput.inputMode = 'numeric';
+  rInput.autocomplete = 'off';
   rInput.placeholder = '0'; rInput.value = r;
   rInput.addEventListener('input', autoDraft);
   rInput.addEventListener('focus', function(){ this.select(); });
@@ -1570,6 +1032,7 @@ function saveSession() {
   setSessions(sessions);
   clearDraft();
   showToast('✓ Workout saved!');
+  var sb = document.getElementById('sessionSavedBadge'); if(sb) sb.style.display='inline';
   updateStats(); renderHistory(); renderChart();
   buildWeightSourceDropdown();
 }
@@ -1607,6 +1070,14 @@ function deleteSession(date, e) {
 // STATS
 // ═══════════════════════════════════════════════════════════════════════
 function updateStats() {
+  // Show/hide "saved" badge for today's date
+  var todayStr = today();
+  var sessions = getSessions();
+  var savedBadge = document.getElementById('sessionSavedBadge');
+  if (savedBadge) {
+    var savedToday = sessions.some(function(s){ return s.date === todayStr; });
+    savedBadge.style.display = savedToday ? 'inline' : 'none';
+  }
   var sessions = getSessions();
   document.getElementById('statSessions').textContent = sessions.length;
   var streak = 0;
@@ -2549,6 +2020,8 @@ document.addEventListener('DOMContentLoaded', function(){
   applyTheme(getTheme());
 
   document.getElementById('sessionDate').value = today();
+  var sl = document.getElementById('stickyDateLabel');
+  if (sl) sl.textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   document.getElementById('todayLabel').textContent =
     new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 
