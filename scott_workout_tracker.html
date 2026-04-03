@@ -234,7 +234,99 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
 #themeToggle:hover { border-color:var(--muted); }
 #themeToggle .toggle-label { font-family:'DM Mono',monospace; font-size:.62rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
 
-@media(max-width:580px){.main{padding:.9rem 1rem;}header{padding:.9rem 1rem;}.modal{padding:1rem;}}
+/* ── Save button — prominent green pill ── */
+.btn-save{
+  background:var(--accent);color:#0f0f0d;font-weight:700;
+  padding:.5rem 1.2rem;border-radius:20px;font-size:.88rem;letter-spacing:.03em;
+  box-shadow:0 2px 8px rgba(212,240,96,.25);
+}
+.btn-save:hover{background:#c8e850;transform:translateY(-1px);box-shadow:0 4px 12px rgba(212,240,96,.35);}
+[data-theme="light"] .btn-save{box-shadow:0 2px 8px rgba(90,138,0,.2);}
+
+/* ── Mobile-first number inputs: larger tap targets ── */
+.sets-table input[type="number"]{
+  width:72px;font-size:.95rem;padding:.3rem .3rem;
+  -moz-appearance:textfield;
+}
+.sets-table input[type="number"]::-webkit-inner-spin-button,
+.sets-table input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+/* Wider weight column, larger reps column */
+.sets-table th:nth-child(2){width:90px;}
+.sets-table th:nth-child(3){width:70px;}
+/* Bigger row height for finger tapping */
+.sets-table td{padding:.45rem .45rem;}
+.sets-table tbody tr{border-bottom:1px solid var(--border);}
+
+/* ── Add Set button — taller for fat-finger tapping ── */
+.add-set-btn{
+  padding:.55rem .7rem;font-size:.8rem;margin-top:.65rem;
+  border-radius:6px;letter-spacing:.04em;
+}
+
+/* ── Exercise card open state: accent left border ── */
+.exercise-card.open{border-color:var(--accent);border-left-width:3px;}
+.checklist-card.open{border-color:var(--accent);border-left-width:3px;}
+[data-theme="light"] .exercise-card.open{border-color:var(--accent);}
+[data-theme="light"] .checklist-card.open{border-color:var(--accent);}
+
+/* ── Larger check targets for checklist ── */
+.check-item{padding:.65rem .3rem;min-height:44px;}
+.check-box{width:26px;height:26px;border-radius:6px;font-size:.95rem;}
+
+/* ── Cardio inputs: larger on mobile ── */
+.cardio-field input{font-size:1.1rem;padding:.5rem .7rem;width:110px;}
+
+/* ── Session date input: larger ── */
+.session-bar input[type="date"]{font-size:.9rem;padding:.5rem .9rem;}
+
+/* ── Last-session bar: compact on small screens ── */
+.last-session-bar .hint{display:none;}  /* hide hint text on all, show on wide */
+@media(min-width:520px){.last-session-bar .hint{display:inline;}}
+
+/* ── Section labels with exercise count badge ── */
+.section-badge{
+  font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.06em;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:.1rem .45rem;color:var(--muted);margin-left:.4rem;
+}
+
+/* ── Open all / Close all buttons ── */
+.section-toggle-btn{
+  font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;
+  background:none;border:none;color:var(--muted);cursor:pointer;padding:.1rem .3rem;
+}
+.section-toggle-btn:hover{color:var(--text);}
+
+/* ── Collapsible chart section ── */
+.chart-section-toggle{
+  display:flex;align-items:center;justify-content:space-between;
+  cursor:pointer;padding:.4rem 0;
+}
+.chart-section-body{display:none;}
+.chart-section-body.open{display:block;}
+
+/* ── Mobile: stack header neatly ── */
+@media(max-width:580px){
+  .main{padding:.9rem 1rem;}
+  header{padding:.75rem 1rem .6rem;gap:.5rem;}
+  .header-btns{gap:.4rem;}
+  .logo{font-size:2rem;}
+  .btn-sm{padding:.35rem .6rem;font-size:.72rem;}
+  .btn-save{padding:.45rem 1rem;font-size:.82rem;}
+  .modal{padding:1rem;}
+  .sets-table input[type="number"]{width:68px;font-size:.9rem;}
+  .stat-value{font-size:1.6rem;}
+  .sets-table th:nth-child(2){width:80px;}
+}
+
+/* ── iOS: prevent zoom on input focus (font-size >= 16px fix) ── */
+@media screen and (max-width:768px){
+  .sets-table input[type="number"],
+  .cardio-field input,
+  .session-bar input[type="date"],
+  .modal-row input[type="text"],
+  .setting-row input{font-size:16px;}
+}
 </style>
 </head>
 <body>
@@ -245,14 +337,13 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
     <div class="date-badge" id="todayLabel"></div>
   </div>
   <div class="header-btns">
-    <button id="themeToggle" onclick="toggleTheme()" title="Toggle light / dark mode">
+    <button type="button" id="themeToggle" onclick="toggleTheme()" title="Toggle light / dark mode">
       <span id="themeIcon">☀️</span><span class="toggle-label" id="themeLabel">Light</span>
     </button>
-    <button btn-ghost" onclick="clearSession()">Clear</button>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="clearSession()">Clear</button>
     <button type="button" class="btn btn-ghost btn-sm" onclick="openSettingsModal()">⚙ Machines</button>
     <button type="button" class="btn btn-blue btn-sm" onclick="openDataModal()">⇅ Data</button>
-    <button btn-orange" onclick="exportCSV()">↓ CSV</button>
-    <button btn-primary" onclick="saveSession()">Save Workout</button>
+    <button type="button" class="btn btn-save" onclick="saveSession()">💾 Save</button>
   </div>
 </header>
 
@@ -260,8 +351,8 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
 
   <div class="stats-strip">
     <div class="stat"><div class="stat-value" id="statSessions">0</div><div class="stat-label">Sessions</div></div>
-    <div class="stat"><div class="stat-value" id="statSets">0</div><div class="stat-label">Total Sets</div></div>
     <div class="stat"><div class="stat-value" id="statStreak">0</div><div class="stat-label">Day Streak</div></div>
+    <div class="stat"><div class="stat-value" id="statLastDate" style="font-size:1rem;padding-top:.3rem;">—</div><div class="stat-label">Last Workout</div></div>
   </div>
 
   <div class="session-bar">
@@ -289,9 +380,9 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
       </div>
       <div class="exercise-body">
         <div class="cardio-fields">
-          <div class="cardio-field"><label>Time (min)</label><input type="number" id="cardio-time" min="0" step="1" placeholder="0" oninput="autoDraft()"></div>
-          <div class="cardio-field"><label>Distance (miles)</label><input type="number" id="cardio-miles" min="0" step="0.1" placeholder="0.0" oninput="autoDraft()"></div>
-          <div class="cardio-field"><label>Level</label><input type="number" id="cardio-level" min="1" step="1" placeholder="1" oninput="autoDraft()"></div>
+          <div class="cardio-field"><label>Time (min)</label><input type="number" id="cardio-time" min="0" step="1" placeholder="0" inputmode="numeric" oninput="autoDraft()"></div>
+          <div class="cardio-field"><label>Distance (miles)</label><input type="number" id="cardio-miles" min="0" step="0.1" placeholder="0.0" inputmode="decimal" oninput="autoDraft()"></div>
+          <div class="cardio-field"><label>Level</label><input type="number" id="cardio-level" min="1" step="1" placeholder="1" inputmode="numeric" oninput="autoDraft()"></div>
         </div>
         <div class="notes-area"><textarea id="notes-cardio" placeholder="Notes..." oninput="autoDraft()"></textarea></div>
       </div>
@@ -314,6 +405,11 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
   <div class="exercise-section">
     <div class="section-header">
       <div class="section-label">Strength</div>
+      <div>
+        <button type="button" class="section-toggle-btn" onclick="toggleAllStrength(true)">expand all</button>
+        <span style="color:var(--border)">|</span>
+        <button type="button" class="section-toggle-btn" onclick="toggleAllStrength(false)">collapse all</button>
+      </div>
     </div>
     <div id="strengthCards">
       <!-- Built-in machines -->
@@ -446,7 +542,11 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
 
   <!-- PROGRESS CHARTS -->
   <div class="exercise-section">
-    <div class="section-label">Progress Charts</div>
+    <div class="chart-section-toggle" onclick="toggleChartSection()" id="chartSectionToggle">
+      <div class="section-label" style="margin:0;border:none;padding:0;">Progress Charts</div>
+      <span class="chevron" id="chartChevron" style="color:var(--muted);font-size:.72rem;">&#9660;</span>
+    </div>
+    <div class="chart-section-body" id="chartSectionBody">
     <div class="chart-tabs" id="chartTabs">
       <button class="chart-tab active" data-ex="chest-press">Chest Press</button>
       <button class="chart-tab" data-ex="row">Row</button>
@@ -464,6 +564,7 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
       <canvas id="progressChart"></canvas>
       <div class="chart-empty" id="chartEmpty">Save at least 2 sessions to see your progress chart.</div>
     </div>
+    </div><!-- /chart-section-body -->
   </div>
 
   <!-- HISTORY -->
@@ -700,7 +801,99 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
 #themeToggle:hover { border-color:var(--muted); }
 #themeToggle .toggle-label { font-family:'DM Mono',monospace; font-size:.62rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
 
-@media(max-width:580px){.main{padding:.9rem 1rem;}header{padding:.9rem 1rem;}.modal{padding:1rem;}}
+/* ── Save button — prominent green pill ── */
+.btn-save{
+  background:var(--accent);color:#0f0f0d;font-weight:700;
+  padding:.5rem 1.2rem;border-radius:20px;font-size:.88rem;letter-spacing:.03em;
+  box-shadow:0 2px 8px rgba(212,240,96,.25);
+}
+.btn-save:hover{background:#c8e850;transform:translateY(-1px);box-shadow:0 4px 12px rgba(212,240,96,.35);}
+[data-theme="light"] .btn-save{box-shadow:0 2px 8px rgba(90,138,0,.2);}
+
+/* ── Mobile-first number inputs: larger tap targets ── */
+.sets-table input[type="number"]{
+  width:72px;font-size:.95rem;padding:.3rem .3rem;
+  -moz-appearance:textfield;
+}
+.sets-table input[type="number"]::-webkit-inner-spin-button,
+.sets-table input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+/* Wider weight column, larger reps column */
+.sets-table th:nth-child(2){width:90px;}
+.sets-table th:nth-child(3){width:70px;}
+/* Bigger row height for finger tapping */
+.sets-table td{padding:.45rem .45rem;}
+.sets-table tbody tr{border-bottom:1px solid var(--border);}
+
+/* ── Add Set button — taller for fat-finger tapping ── */
+.add-set-btn{
+  padding:.55rem .7rem;font-size:.8rem;margin-top:.65rem;
+  border-radius:6px;letter-spacing:.04em;
+}
+
+/* ── Exercise card open state: accent left border ── */
+.exercise-card.open{border-color:var(--accent);border-left-width:3px;}
+.checklist-card.open{border-color:var(--accent);border-left-width:3px;}
+[data-theme="light"] .exercise-card.open{border-color:var(--accent);}
+[data-theme="light"] .checklist-card.open{border-color:var(--accent);}
+
+/* ── Larger check targets for checklist ── */
+.check-item{padding:.65rem .3rem;min-height:44px;}
+.check-box{width:26px;height:26px;border-radius:6px;font-size:.95rem;}
+
+/* ── Cardio inputs: larger on mobile ── */
+.cardio-field input{font-size:1.1rem;padding:.5rem .7rem;width:110px;}
+
+/* ── Session date input: larger ── */
+.session-bar input[type="date"]{font-size:.9rem;padding:.5rem .9rem;}
+
+/* ── Last-session bar: compact on small screens ── */
+.last-session-bar .hint{display:none;}  /* hide hint text on all, show on wide */
+@media(min-width:520px){.last-session-bar .hint{display:inline;}}
+
+/* ── Section labels with exercise count badge ── */
+.section-badge{
+  font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.06em;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:.1rem .45rem;color:var(--muted);margin-left:.4rem;
+}
+
+/* ── Open all / Close all buttons ── */
+.section-toggle-btn{
+  font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;
+  background:none;border:none;color:var(--muted);cursor:pointer;padding:.1rem .3rem;
+}
+.section-toggle-btn:hover{color:var(--text);}
+
+/* ── Collapsible chart section ── */
+.chart-section-toggle{
+  display:flex;align-items:center;justify-content:space-between;
+  cursor:pointer;padding:.4rem 0;
+}
+.chart-section-body{display:none;}
+.chart-section-body.open{display:block;}
+
+/* ── Mobile: stack header neatly ── */
+@media(max-width:580px){
+  .main{padding:.9rem 1rem;}
+  header{padding:.75rem 1rem .6rem;gap:.5rem;}
+  .header-btns{gap:.4rem;}
+  .logo{font-size:2rem;}
+  .btn-sm{padding:.35rem .6rem;font-size:.72rem;}
+  .btn-save{padding:.45rem 1rem;font-size:.82rem;}
+  .modal{padding:1rem;}
+  .sets-table input[type="number"]{width:68px;font-size:.9rem;}
+  .stat-value{font-size:1.6rem;}
+  .sets-table th:nth-child(2){width:80px;}
+}
+
+/* ── iOS: prevent zoom on input focus (font-size >= 16px fix) ── */
+@media screen and (max-width:768px){
+  .sets-table input[type="number"],
+  .cardio-field input,
+  .session-bar input[type="date"],
+  .modal-row input[type="text"],
+  .setting-row input{font-size:16px;}
+}
 </style>
 </head>
 <body>
@@ -711,14 +904,13 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
     <div class="date-badge" id="todayLabel"></div>
   </div>
   <div class="header-btns">
-    <button id="themeToggle" onclick="toggleTheme()" title="Toggle light / dark mode">
+    <button type="button" id="themeToggle" onclick="toggleTheme()" title="Toggle light / dark mode">
       <span id="themeIcon">☀️</span><span class="toggle-label" id="themeLabel">Light</span>
     </button>
-    <button btn-ghost" onclick="clearSession()">Clear</button>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="clearSession()">Clear</button>
     <button type="button" class="btn btn-ghost btn-sm" onclick="openSettingsModal()">⚙ Machines</button>
     <button type="button" class="btn btn-blue btn-sm" onclick="openDataModal()">⇅ Data</button>
-    <button btn-orange" onclick="exportCSV()">↓ CSV</button>
-    <button btn-primary" onclick="saveSession()">Save Workout</button>
+    <button type="button" class="btn btn-save" onclick="saveSession()">💾 Save</button>
   </div>
 </header>
 
@@ -726,8 +918,8 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
 
   <div class="stats-strip">
     <div class="stat"><div class="stat-value" id="statSessions">0</div><div class="stat-label">Sessions</div></div>
-    <div class="stat"><div class="stat-value" id="statSets">0</div><div class="stat-label">Total Sets</div></div>
     <div class="stat"><div class="stat-value" id="statStreak">0</div><div class="stat-label">Day Streak</div></div>
+    <div class="stat"><div class="stat-value" id="statLastDate" style="font-size:1rem;padding-top:.3rem;">—</div><div class="stat-label">Last Workout</div></div>
   </div>
 
   <div class="session-bar">
@@ -755,9 +947,9 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
       </div>
       <div class="exercise-body">
         <div class="cardio-fields">
-          <div class="cardio-field"><label>Time (min)</label><input type="number" id="cardio-time" min="0" step="1" placeholder="0" oninput="autoDraft()"></div>
-          <div class="cardio-field"><label>Distance (miles)</label><input type="number" id="cardio-miles" min="0" step="0.1" placeholder="0.0" oninput="autoDraft()"></div>
-          <div class="cardio-field"><label>Level</label><input type="number" id="cardio-level" min="1" step="1" placeholder="1" oninput="autoDraft()"></div>
+          <div class="cardio-field"><label>Time (min)</label><input type="number" id="cardio-time" min="0" step="1" placeholder="0" inputmode="numeric" oninput="autoDraft()"></div>
+          <div class="cardio-field"><label>Distance (miles)</label><input type="number" id="cardio-miles" min="0" step="0.1" placeholder="0.0" inputmode="decimal" oninput="autoDraft()"></div>
+          <div class="cardio-field"><label>Level</label><input type="number" id="cardio-level" min="1" step="1" placeholder="1" inputmode="numeric" oninput="autoDraft()"></div>
         </div>
         <div class="notes-area"><textarea id="notes-cardio" placeholder="Notes..." oninput="autoDraft()"></textarea></div>
       </div>
@@ -780,6 +972,11 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
   <div class="exercise-section">
     <div class="section-header">
       <div class="section-label">Strength</div>
+      <div>
+        <button type="button" class="section-toggle-btn" onclick="toggleAllStrength(true)">expand all</button>
+        <span style="color:var(--border)">|</span>
+        <button type="button" class="section-toggle-btn" onclick="toggleAllStrength(false)">collapse all</button>
+      </div>
     </div>
     <div id="strengthCards">
       <!-- Built-in machines -->
@@ -912,7 +1109,11 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
 
   <!-- PROGRESS CHARTS -->
   <div class="exercise-section">
-    <div class="section-label">Progress Charts</div>
+    <div class="chart-section-toggle" onclick="toggleChartSection()" id="chartSectionToggle">
+      <div class="section-label" style="margin:0;border:none;padding:0;">Progress Charts</div>
+      <span class="chevron" id="chartChevron" style="color:var(--muted);font-size:.72rem;">&#9660;</span>
+    </div>
+    <div class="chart-section-body" id="chartSectionBody">
     <div class="chart-tabs" id="chartTabs">
       <button class="chart-tab active" data-ex="chest-press">Chest Press</button>
       <button class="chart-tab" data-ex="row">Row</button>
@@ -1019,6 +1220,31 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
       <button type="button" class="btn btn-blue btn-sm" onclick="importJSON()">↑ Import from text above</button>
     </div>
     <p style="font-size:.7rem;color:var(--red);font-family:'DM Mono',monospace;" id="importError"></p>
+
+    <div class="divider"></div>
+
+    <div style="margin-top:.9rem;">
+      <p style="font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;">Import CSV</p>
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:.7rem;line-height:1.5;">
+        Import a CSV file exported from this app. You can choose to <strong style="color:var(--text)">merge</strong> (add sessions not already present) or <strong style="color:var(--text)">replace</strong> all existing data.
+      </p>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:.6rem;">
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer;">
+          Choose CSV file <input type="file" accept=".csv,text/csv" style="display:none;" onchange="loadCSVFile(event)">
+        </label>
+        <span id="csvFileName" style="font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);">No file chosen</span>
+      </div>
+      <div id="csvPreview" style="display:none;margin-bottom:.7rem;">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:.55rem .7rem;">
+          <p id="csvSummary" style="font-size:.78rem;color:var(--text);margin-bottom:.5rem;"></p>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <button type="button" class="btn btn-blue btn-sm" onclick="importCSV('merge')">Merge (keep existing + add new)</button>
+            <button type="button" class="btn btn-orange btn-sm" onclick="importCSV('replace')">Replace all data</button>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:.7rem;color:var(--red);font-family:'DM Mono',monospace;" id="csvError"></p>
+    </div>
 
     <div class="divider"></div>
     <div class="modal-actions">
@@ -1147,8 +1373,10 @@ function appendSetRow(exId, num, weight, reps, lastWeight) {
     wWrap.style.display = 'inline-flex'; wWrap.style.alignItems = 'center';
     var wInput = document.createElement('input');
     wInput.type = 'number'; wInput.min = '0'; wInput.step = '5';
-    wInput.placeholder = '—'; wInput.value = w;
+    wInput.inputMode = 'decimal';
+    wInput.placeholder = '0'; wInput.value = w;
     wInput.addEventListener('input', autoDraft);
+    wInput.addEventListener('focus', function(){ this.select(); });
     wWrap.appendChild(wInput);
     if (lastWeight !== undefined && lastWeight !== null && lastWeight !== '') {
       var hint = document.createElement('span');
@@ -1163,13 +1391,16 @@ function appendSetRow(exId, num, weight, reps, lastWeight) {
   var rTd = document.createElement('td');
   var rInput = document.createElement('input');
   rInput.type = 'number'; rInput.min = '0';
-  rInput.placeholder = '—'; rInput.value = r;
+  rInput.inputMode = 'numeric';
+  rInput.placeholder = '0'; rInput.value = r;
   rInput.addEventListener('input', autoDraft);
+  rInput.addEventListener('focus', function(){ this.select(); });
   rTd.appendChild(rInput);
   tr.appendChild(rTd);
 
   var delTd = document.createElement('td');
   var delBtn = document.createElement('button');
+  delBtn.type = 'button';
   delBtn.className = 'btn btn-danger'; delBtn.textContent = '✕';
   delBtn.addEventListener('click', function(){ removeSet(this); });
   delTd.appendChild(delBtn);
@@ -1378,14 +1609,6 @@ function deleteSession(date, e) {
 function updateStats() {
   var sessions = getSessions();
   document.getElementById('statSessions').textContent = sessions.length;
-  var totalSets = 0;
-  sessions.forEach(function(s){
-    if (!s.exercises) return;
-    Object.values(s.exercises).forEach(function(ex){
-      totalSets += (ex.sets||[]).filter(function(set){ return set.weight||set.reps; }).length;
-    });
-  });
-  document.getElementById('statSets').textContent = totalSets;
   var streak = 0;
   var sorted = sessions.map(function(s){ return s.date; }).sort().reverse();
   var checkDate = new Date(); checkDate.setHours(12,0,0,0);
@@ -1395,6 +1618,38 @@ function updateStats() {
     else if (sorted[i] < cs) break;
   }
   document.getElementById('statStreak').textContent = streak;
+  // Last workout date
+  var lastEl = document.getElementById('statLastDate');
+  if (lastEl) {
+    if (sorted.length > 0) {
+      var d = sorted[0].split('-'); // YYYY-MM-DD
+      lastEl.textContent = (d[1]||'') + '/' + (d[2]||'');
+      lastEl.title = sorted[0];
+    } else {
+      lastEl.textContent = '—';
+    }
+  }
+}
+
+function toggleAllStrength(open) {
+  var ids = ['chest-press','row','leg-curl','leg-press','leg-ext'];
+  // Also include custom machines
+  getMachines().forEach(function(m){ ids.push(m.id); });
+  ids.forEach(function(id){
+    var card = document.getElementById('card-' + id);
+    if (!card) return;
+    if (open) card.classList.add('open');
+    else card.classList.remove('open');
+  });
+}
+
+function toggleChartSection() {
+  var body = document.getElementById('chartSectionBody');
+  var chev = document.getElementById('chartChevron');
+  if (!body) return;
+  body.classList.toggle('open');
+  if (chev) chev.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : '';
+  if (body.classList.contains('open')) renderChart();
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1418,7 +1673,11 @@ function renderHistory() {
       var ex = s.exercises && s.exercises[exId];
       if (!ex) return null;
       var filled = (ex.sets||[]).filter(function(set){ return set.weight||set.reps; });
-      return filled.length > 0 ? getExLabel(exId)+':'+filled.length+'sets' : null;
+      if (!filled.length) return null;
+      var maxW = 0;
+      filled.forEach(function(set){ if (parseFloat(set.weight) > maxW) maxW = parseFloat(set.weight); });
+      var label = getExLabel(exId);
+      return maxW > 0 ? label + ' ' + maxW + 'lbs×' + filled.length : label + ' ' + filled.length + 'sets';
     }).filter(Boolean);
     var div = document.createElement('div'); div.className = 'history-item';
     var dateSpan = document.createElement('span'); dateSpan.className = 'history-date'; dateSpan.textContent = s.date;
@@ -1533,6 +1792,234 @@ function exportCSV() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// CSV IMPORT
+// ═══════════════════════════════════════════════════════════════════════
+
+// Build a lookup: exercise name (lowercase) -> exId
+function buildNameToIdMap() {
+  var map = {};
+  // Built-ins
+  Object.keys(EX_LABELS).forEach(function(id){
+    map[EX_LABELS[id].toLowerCase()] = id;
+  });
+  // Custom machines
+  getMachines().forEach(function(m){
+    map[m.name.toLowerCase()] = m.id;
+  });
+  return map;
+}
+
+var csvParsedSessions = null; // holds parsed sessions waiting for user merge/replace choice
+
+function loadCSVFile(event) {
+  var file = event.target.files[0];
+  csvParsedSessions = null;
+  var errEl   = document.getElementById('csvError');
+  var preview = document.getElementById('csvPreview');
+  var summary = document.getElementById('csvSummary');
+  var nameEl  = document.getElementById('csvFileName');
+  errEl.textContent   = '';
+  preview.style.display = 'none';
+
+  if (!file) { nameEl.textContent = 'No file chosen'; return; }
+  nameEl.textContent = file.name;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      csvParsedSessions = parseCSVToSessions(e.target.result);
+      if (!csvParsedSessions || !csvParsedSessions.length) {
+        errEl.textContent = 'No valid sessions found in file. Make sure it is a Scott.Fit CSV export.';
+        return;
+      }
+      var existing   = getSessions();
+      var newDates   = csvParsedSessions.map(function(s){ return s.date; });
+      var overlapCount = existing.filter(function(s){ return newDates.indexOf(s.date) >= 0; }).length;
+      var newCount     = newDates.length - overlapCount;
+
+      summary.innerHTML =
+        'Found <strong>' + csvParsedSessions.length + ' session' + (csvParsedSessions.length !== 1 ? 's' : '') + '</strong>' +
+        ' across <strong>' + countExercisesInSessions(csvParsedSessions) + ' exercise type' + (countExercisesInSessions(csvParsedSessions) !== 1 ? 's' : '') + '</strong>.' +
+        (overlapCount > 0 ? ' <span style="color:var(--accent2)">' + overlapCount + ' date' + (overlapCount !== 1 ? 's' : '') + ' already exist in your data.</span>' : '') +
+        (newCount > 0 ? ' <span style="color:var(--accent)">' + newCount + ' new date' + (newCount !== 1 ? 's' : '') + '.</span>' : '');
+
+      preview.style.display = 'block';
+    } catch(err) {
+      errEl.textContent = 'Error reading file: ' + err.message;
+    }
+  };
+  reader.readAsText(file);
+}
+
+function countExercisesInSessions(sessions) {
+  var seen = {};
+  sessions.forEach(function(s){
+    Object.keys(s.exercises).forEach(function(k){ seen[k] = true; });
+  });
+  return Object.keys(seen).length;
+}
+
+function parseCSVToSessions(text) {
+  // Normalize line endings
+  var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  if (!lines.length) return [];
+
+  // Parse header row - find column indices flexibly
+  var header = parseCSVRow(lines[0]);
+  var colDate  = findCol(header, ['date']);
+  var colEx    = findCol(header, ['exercise']);
+  var colSet   = findCol(header, ['set #', 'set#', 'set']);
+  var colWt    = findCol(header, ['weight (lbs)', 'weight']);
+  var colReps  = findCol(header, ['reps']);
+  var colNotes = findCol(header, ['notes']);
+
+  if (colDate < 0 || colEx < 0) {
+    throw new Error('CSV must have at least Date and Exercise columns.');
+  }
+
+  var nameMap  = buildNameToIdMap();
+  var byDate   = {}; // date -> session object
+  var dateOrder = [];
+
+  for (var i = 1; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    var cols = parseCSVRow(line);
+    if (cols.length < 2) continue;
+
+    var date   = (cols[colDate]  || '').trim();
+    var exName = (cols[colEx]    || '').trim();
+    var wt     = colWt   >= 0 ? (cols[colWt]    || '').trim() : '';
+    var reps   = colReps >= 0 ? (cols[colReps]  || '').trim() : '';
+    var notes  = colNotes >= 0 ? (cols[colNotes] || '').trim() : '';
+
+    if (!date || !exName) continue;
+
+    // Validate date format YYYY-MM-DD
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+
+    // Map exercise name to ID
+    var exId = nameMap[exName.toLowerCase()];
+    if (!exId) {
+      // Try partial match
+      var lc = exName.toLowerCase();
+      Object.keys(nameMap).forEach(function(k){
+        if (k.indexOf(lc) >= 0 || lc.indexOf(k) >= 0) exId = nameMap[k];
+      });
+    }
+    if (!exId) {
+      // Unknown exercise - create an ID from the name
+      exId = 'csv-' + exName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '');
+      nameMap[exName.toLowerCase()] = exId;
+    }
+
+    if (!byDate[date]) {
+      byDate[date] = { date: date, exercises: {}, cardio: {}, checks: {} };
+      dateOrder.push(date);
+    }
+    var session = byDate[date];
+
+    if (!session.exercises[exId]) {
+      session.exercises[exId] = { sets: [], notes: '' };
+    }
+
+    // Determine weight value
+    var wtVal = '';
+    if (wt && wt.toUpperCase() !== 'BW' && wt !== '') {
+      var parsed = parseFloat(wt);
+      wtVal = isNaN(parsed) ? '' : String(parsed);
+    }
+
+    var repsVal = '';
+    if (reps !== '') {
+      var parsedR = parseInt(reps, 10);
+      repsVal = isNaN(parsedR) ? '' : String(parsedR);
+    }
+
+    session.exercises[exId].sets.push({ weight: wtVal, reps: repsVal });
+
+    // Notes: only on first set (set# == 1), or if no set column
+    if (notes && !session.exercises[exId].notes) {
+      session.exercises[exId].notes = notes;
+    }
+  }
+
+  // Sort sessions newest first (matching app convention)
+  dateOrder.sort(function(a, b){ return b.localeCompare(a); });
+  return dateOrder.map(function(d){ return byDate[d]; });
+}
+
+function parseCSVRow(line) {
+  // Handles quoted fields with commas inside
+  var result = [];
+  var cur = '';
+  var inQuotes = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i+1] === '"') { cur += '"'; i++; } // escaped quote
+      else { inQuotes = !inQuotes; }
+    } else if (ch === ',' && !inQuotes) {
+      result.push(cur); cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+function findCol(header, candidates) {
+  for (var i = 0; i < header.length; i++) {
+    var h = header[i].toLowerCase().trim();
+    for (var j = 0; j < candidates.length; j++) {
+      if (h === candidates[j] || h.indexOf(candidates[j]) >= 0) return i;
+    }
+  }
+  return -1;
+}
+
+function importCSV(mode) {
+  if (!csvParsedSessions || !csvParsedSessions.length) return;
+  var errEl = document.getElementById('csvError');
+
+  if (mode === 'replace') {
+    if (!confirm('Replace ALL existing data with ' + csvParsedSessions.length + ' session(s) from the CSV?\n\nThis cannot be undone. Consider exporting a JSON backup first.')) return;
+    setSessions(csvParsedSessions);
+  } else {
+    // Merge: existing sessions win on date conflicts (CSV adds new dates only)
+    var existing  = getSessions();
+    var existingDates = {};
+    existing.forEach(function(s){ existingDates[s.date] = true; });
+    var added = 0;
+    csvParsedSessions.forEach(function(s){
+      if (!existingDates[s.date]) {
+        existing.push(s);
+        added++;
+      }
+    });
+    // Sort newest first
+    existing.sort(function(a, b){ return b.date.localeCompare(a.date); });
+    setSessions(existing);
+    if (added === 0) {
+      errEl.textContent = 'All dates in the CSV already exist in your data. Nothing was added.';
+      return;
+    }
+    showToast('\u2713 Merged ' + added + ' new session' + (added !== 1 ? 's' : '') + ' from CSV.');
+  }
+
+  clearDraft();
+  closeDataModal();
+  buildWeightSourceDropdown();
+  populateFromData(null);
+  updateStats(); renderHistory(); renderChart();
+  if (mode === 'replace') {
+    showToast('\u2713 Data replaced from CSV.');
+  }
+  csvParsedSessions = null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // JSON EXPORT / IMPORT
 // ═══════════════════════════════════════════════════════════════════════
 function exportJSON() {
@@ -1605,14 +2092,17 @@ function openSettingsModal() {
 }
 function closeSettingsModal() {
   document.getElementById('settingsModal').classList.add('hidden');
-  // Re-enable name field in case builtin form left it disabled
-  document.getElementById('mf-name').disabled = false;
+  var nameEl = document.getElementById('mf-name');
+  if (nameEl) nameEl.disabled = false;
+  // Rebuild custom machine cards
   renderCustomMachineCards();
-  // Refresh all builtin card metas and pills
+  // Refresh all builtin card headers and pills from storage
+  // Runs AFTER renderCustomMachineCards so DOM is stable
   ['chest-press','row','leg-curl','leg-press','leg-ext'].forEach(function(exId){
     refreshBuiltinCardMeta(exId);
   });
-  populateFromData(getDraft());
+  // NOT calling populateFromData here - it was overwriting the
+  // freshly saved pill values by restoring the pre-edit draft state.
 }
 function openDataModal() {
   document.getElementById('importText').value = '';
@@ -1697,7 +2187,7 @@ function buildMachineRow(m, isCustom) {
       pill.innerHTML = '<span style="color:var(--muted)">' + s.type + ':</span>&nbsp;<strong>' + s.value + '</strong>&nbsp;<span style="color:var(--muted);font-size:.6rem;">✎</span>';
       pill.addEventListener('click', function(){
         openInlineSettingEdit(m.id, s.type, isCustom);
-        setTimeout(renderMachineList, 100);
+        renderMachineList();
       });
       pillRow.appendChild(pill);
     });
@@ -1883,7 +2373,11 @@ function settingsToMeta(settings) {
 function refreshBuiltinCardMeta(exId) {
   var settings = getSettingsForBuiltin(exId);
   var metaEl = document.querySelector('#card-' + exId + ' .exercise-meta');
-  if (metaEl) metaEl.textContent = settingsToMeta(settings);
+  // Only overwrite meta text if there are settings to show
+  // (avoids blanking out machines with no configured settings)
+  if (metaEl && settings.length > 0) {
+    metaEl.textContent = settingsToMeta(settings);
+  }
   // Refresh inline pills if visible in body
   var pillsEl = document.querySelector('#card-' + exId + ' .machine-settings');
   if (pillsEl) {
@@ -2108,9 +2602,12 @@ document.addEventListener('DOMContentLoaded', function(){
 
   updateStats(); renderHistory(); renderChart();
 
-  // Open cardio and first strength card by default
+  // Open cardio + all strength cards by default for quick workout entry
   document.getElementById('card-cardio').classList.add('open');
-  document.getElementById('card-chest-press').classList.add('open');
+  ['chest-press','row','leg-curl','leg-press','leg-ext'].forEach(function(id){
+    var c = document.getElementById('card-' + id);
+    if (c) c.classList.add('open');
+  });
 });
 </script>
 </body>
