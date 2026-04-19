@@ -324,7 +324,7 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
   display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;
   padding:.6rem 1rem max(env(safe-area-inset-bottom),.6rem);
   background:var(--bg);border-top:1px solid var(--border);
-  display:flex;gap:.6rem;justify-content:space-between;align-items:center;
+  gap:.6rem;justify-content:space-between;align-items:center;
 }
 #stickyBar .sticky-date{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);}
 #stickyBar .btn-save-sticky{
@@ -335,8 +335,92 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
 [data-theme="light"] #stickyBar .btn-save-sticky{color:#fff;}
 @media(max-width:720px){
   #stickyBar{display:flex;}
-  .main{padding-bottom:calc(max(env(safe-area-inset-bottom),.6rem) + 4rem);}
+  .main{padding-bottom:calc(max(env(safe-area-inset-bottom),.6rem) + 4.5rem);}
 }
+
+/* ── History item action buttons (export + delete) ── */
+.history-action-btn{
+  background:transparent;border:1px solid var(--border);color:var(--muted);
+  font-size:.78rem;padding:.25rem .5rem;border-radius:4px;cursor:pointer;
+  transition:all .15s;min-width:28px;
+  font-family:'DM Sans',sans-serif;
+}
+.history-action-btn:hover{border-color:var(--accent3);color:var(--accent3);}
+.history-action-del:hover{border-color:var(--red);color:var(--red);}
+.history-actions{display:flex;gap:.3rem;flex-shrink:0;}
+
+/* ── Unsaved changes badge visibility ── */
+#sessionUnsavedBadge{
+  animation:pulseAmber 2s ease-in-out infinite;
+}
+@keyframes pulseAmber{
+  0%,100%{opacity:1;}
+  50%{opacity:.55;}
+}
+
+/* ── Keyboard shortcut hint in footer ── */
+.kb-hint{
+  text-align:center;padding:1rem .5rem 2rem;
+  font-family:'DM Mono',monospace;font-size:.6rem;
+  color:var(--muted);letter-spacing:.04em;
+}
+.kb-hint kbd{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:3px;padding:.08rem .35rem;font-size:.62rem;
+  color:var(--text);font-family:'DM Mono',monospace;
+}
+
+/* ── Print styles: clean report layout ── */
+@media print {
+  body{background:#fff !important;color:#000 !important;}
+  body::before{display:none !important;}
+  header,.header-btns,#stickyBar,#themeToggle,
+  .section-toggle-btn,.chart-section-toggle,.chart-section-body,
+  .history-toggle,.history-list,.last-session-bar,
+  .modal-overlay,.toast,.add-set-btn,.btn-danger{display:none !important;}
+  .main{max-width:100%;padding:0;}
+  .exercise-card,.checklist-card{
+    break-inside:avoid;border:1px solid #333 !important;
+    box-shadow:none !important;margin-bottom:.5rem;
+  }
+  .exercise-body{display:block !important;}
+  .exercise-card .chevron{display:none !important;}
+  .logo{color:#000 !important;}
+  .logo span{color:#000 !important;}
+  .stats-strip{border:1px solid #333 !important;}
+  .section-label{color:#000 !important;border-color:#333 !important;}
+  .sets-table{font-size:11px;}
+  .sets-table input{border:none !important;background:transparent !important;}
+}
+
+/* ── Reorder modal ── */
+.reorder-list{list-style:none;padding:0;margin:0;}
+.reorder-item{
+  display:flex;align-items:center;gap:.6rem;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;padding:.6rem .75rem;margin-bottom:.45rem;
+  user-select:none;-webkit-user-select:none;
+}
+.reorder-item.dragging{opacity:.4;border-color:var(--accent);}
+.reorder-item.drag-over{border-color:var(--accent);border-style:dashed;}
+.reorder-handle{
+  cursor:grab;color:var(--muted);font-size:1rem;
+  padding:.2rem .3rem;touch-action:none;
+}
+.reorder-handle:active{cursor:grabbing;}
+.reorder-name{flex:1;font-size:.88rem;}
+.reorder-name .reorder-type{
+  font-family:'DM Mono',monospace;font-size:.58rem;
+  color:var(--muted);margin-left:.4rem;text-transform:uppercase;letter-spacing:.06em;
+}
+.reorder-btns{display:flex;gap:.25rem;}
+.reorder-btn{
+  background:transparent;border:1px solid var(--border);color:var(--muted);
+  padding:.35rem .55rem;border-radius:4px;cursor:pointer;font-size:.82rem;
+  min-width:34px;min-height:34px;line-height:1;
+}
+.reorder-btn:hover:not(:disabled){border-color:var(--accent3);color:var(--accent3);}
+.reorder-btn:disabled{opacity:.3;cursor:not-allowed;}
 
 /* ── iOS: prevent zoom on input focus (font-size >= 16px fix) ── */
 @media screen and (max-width:768px){
@@ -359,6 +443,7 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
     <button type="button" id="themeToggle" onclick="toggleTheme()" title="Toggle light / dark mode">
       <span id="themeIcon">☀️</span><span class="toggle-label" id="themeLabel">Light</span>
     </button>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="duplicateLastSession()" title="Copy last workout as starting point">⎘ Copy Last</button>
     <button type="button" class="btn btn-ghost btn-sm" onclick="clearSession()">Clear</button>
     <button type="button" class="btn btn-ghost btn-sm" onclick="openSettingsModal()">⚙ Machines</button>
     <button type="button" class="btn btn-blue btn-sm" onclick="openDataModal()">⇅ Data</button>
@@ -427,13 +512,15 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
     <div class="section-header">
       <div class="section-label">Strength</div>
       <div>
+        <button type="button" class="section-toggle-btn" onclick="openReorderModal()" title="Change exercise order">↕ reorder</button>
+        <span style="color:var(--border)">|</span>
         <button type="button" class="section-toggle-btn" onclick="toggleAllStrength(true)">expand all</button>
         <span style="color:var(--border)">|</span>
         <button type="button" class="section-toggle-btn" onclick="toggleAllStrength(false)">collapse all</button>
       </div>
     </div>
     <div id="strengthCards">
-      <!-- Built-in machines -->
+      <!-- Built-in machines (order will be applied from localStorage on boot) -->
       <div class="exercise-card" id="card-chest-press">
         <div class="exercise-header" onclick="toggleCard('chest-press')">
           <span class="exercise-name">Chest Press</span>
@@ -598,6 +685,10 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
     <div class="history-list" id="historyList"></div>
   </div>
 
+  <div class="kb-hint">
+    <kbd>Ctrl</kbd>+<kbd>S</kbd> or <kbd>⌘</kbd>+<kbd>S</kbd> to save · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> to clear
+  </div>
+
 </div><!-- /main -->
 
 <div class="toast" id="toast"></div>
@@ -713,6 +804,25 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
   </div>
 </div>
 
+<!-- ══ REORDER MODAL (Strength exercise order) ════════════════════════ -->
+<div class="modal-overlay hidden" id="reorderModal">
+  <div class="modal">
+    <h2>↕ Reorder Strength Exercises</h2>
+    <p style="font-size:.78rem;color:var(--muted);margin-bottom:1rem;line-height:1.5;">
+      Drag the handles to reorder, or use the ▲ ▼ arrows. Group exercises however you like (e.g., upper body first, then lower body). The order saves automatically when you tap Done.
+    </p>
+    <ul id="reorderList" class="reorder-list"></ul>
+    <div style="margin-top:1rem;">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="resetReorderToDefault()">Reset to default order</button>
+    </div>
+    <div class="divider"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeReorderModal()">Cancel</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="saveReorder()">Done</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════════════
 // CONFIG — built-in exercises
@@ -738,6 +848,7 @@ var SESSION_KEY   = 'scottfit_v3_sessions';
 var DRAFT_KEY     = 'scottfit_v3_draft';
 var MACHINES_KEY  = 'scottfit_v3_machines';
 var BSETTINGS_KEY = 'scottfit_v3_builtin_settings';
+var STRENGTH_ORDER_KEY = 'scottfit_v3_strength_order';
 
 // Default settings for built-in machines (editable by user, stored separately)
 var BUILTIN_DEFAULTS = {
@@ -980,7 +1091,51 @@ function collectSession() {
   return { date:date, cardio:cardioData, exercises:exercises, checks:checks };
 }
 
-function autoDraft() { setDraft(collectSession()); }
+// Dirty state tracking (for unsaved changes indicator and beforeunload)
+var isDirty = false;
+function setDirty(dirty) {
+  isDirty = dirty;
+  var unsavedBadge = document.getElementById('sessionUnsavedBadge');
+  var savedBadge   = document.getElementById('sessionSavedBadge');
+  if (!unsavedBadge) return;
+  if (dirty) {
+    unsavedBadge.style.display = 'inline';
+    if (savedBadge) savedBadge.style.display = 'none';
+  } else {
+    unsavedBadge.style.display = 'none';
+  }
+}
+
+function autoDraft() {
+  try {
+    setDraft(collectSession());
+    setDirty(true);
+  } catch(e) {
+    console.warn('autoDraft failed:', e);
+  }
+}
+
+function duplicateLastSession() {
+  var sessions = getSessions();
+  if (!sessions.length) {
+    alert('No previous workout to copy. Save one first!');
+    return;
+  }
+  if (isDirty) {
+    if (!confirm('You have unsaved changes. Copy last workout anyway?\n\n(Your current entries will be replaced.)')) return;
+  }
+  var last = sessions[0];
+  // Clone it with today's date
+  var copy = JSON.parse(JSON.stringify(last));
+  copy.date = today();
+  populateFromData(copy);
+  autoDraft();
+  allExerciseIds().forEach(function(id){
+    var c = document.getElementById('card-'+id);
+    if (c) c.classList.add('open');
+  });
+  showToast('✓ Copied workout from ' + last.date);
+}
 
 function seedSetsForEx(exId, sourceData) {
   // sourceData = array of {weight, reps} from saved session or null
@@ -1025,21 +1180,32 @@ function populateFromData(data) {
 }
 
 function saveSession() {
-  var session  = collectSession();
-  var sessions = getSessions();
-  var idx      = sessions.findIndex(function(s){ return s.date === session.date; });
-  if (idx >= 0) sessions[idx] = session; else sessions.unshift(session);
-  setSessions(sessions);
-  clearDraft();
-  showToast('✓ Workout saved!');
-  var sb = document.getElementById('sessionSavedBadge'); if(sb) sb.style.display='inline';
-  updateStats(); renderHistory(); renderChart();
-  buildWeightSourceDropdown();
+  try {
+    var session  = collectSession();
+    var sessions = getSessions();
+    var idx      = sessions.findIndex(function(s){ return s.date === session.date; });
+    if (idx >= 0) sessions[idx] = session; else sessions.unshift(session);
+    setSessions(sessions);
+    clearDraft();
+    setDirty(false);
+    showToast('✓ Workout saved!');
+    var sb = document.getElementById('sessionSavedBadge'); if(sb) sb.style.display='inline';
+    updateStats(); renderHistory(); renderChart();
+    buildWeightSourceDropdown();
+  } catch(e) {
+    if (e && e.name === 'QuotaExceededError') {
+      alert('Storage is full! Export a JSON backup and delete old sessions to free up space.');
+    } else {
+      alert('Could not save: ' + (e && e.message ? e.message : 'Unknown error'));
+    }
+    console.error('Save failed:', e);
+  }
 }
 
 function clearSession() {
   if (!confirm('Clear current session?')) return;
   clearDraft();
+  setDirty(false);
   ['cardio-time','cardio-miles','cardio-level'].forEach(function(id){ var el = document.getElementById(id); if(el) el.value=''; });
   var cn = document.getElementById('notes-cardio'); if(cn) cn.value='';
   allExerciseIds().forEach(function(exId){
@@ -1070,15 +1236,14 @@ function deleteSession(date, e) {
 // STATS
 // ═══════════════════════════════════════════════════════════════════════
 function updateStats() {
-  // Show/hide "saved" badge for today's date
   var todayStr = today();
   var sessions = getSessions();
+  // Show/hide "saved" badge for today's date
   var savedBadge = document.getElementById('sessionSavedBadge');
-  if (savedBadge) {
+  if (savedBadge && !isDirty) {
     var savedToday = sessions.some(function(s){ return s.date === todayStr; });
     savedBadge.style.display = savedToday ? 'inline' : 'none';
   }
-  var sessions = getSessions();
   document.getElementById('statSessions').textContent = sessions.length;
   var streak = 0;
   var sorted = sessions.map(function(s){ return s.date; }).sort().reverse();
@@ -1124,6 +1289,204 @@ function toggleChartSection() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// STRENGTH REORDERING
+// ═══════════════════════════════════════════════════════════════════════
+
+// Default order = the DOM order of built-ins + custom machines in creation order
+function getDefaultStrengthOrder() {
+  var ids = ['chest-press','row','leg-curl','leg-press','leg-ext'];
+  getMachines().forEach(function(m){ ids.push(m.id); });
+  return ids;
+}
+
+function getStrengthOrder() {
+  try {
+    var stored = JSON.parse(localStorage.getItem(STRENGTH_ORDER_KEY) || 'null');
+    if (!Array.isArray(stored) || !stored.length) return getDefaultStrengthOrder();
+    // Prune IDs that no longer exist (deleted custom machines)
+    var valid = {};
+    getDefaultStrengthOrder().forEach(function(id){ valid[id] = true; });
+    var pruned = stored.filter(function(id){ return valid[id]; });
+    // Append any new machines not in stored order
+    getDefaultStrengthOrder().forEach(function(id){
+      if (pruned.indexOf(id) < 0) pruned.push(id);
+    });
+    return pruned;
+  } catch(e) { return getDefaultStrengthOrder(); }
+}
+
+function setStrengthOrder(arr) {
+  try { localStorage.setItem(STRENGTH_ORDER_KEY, JSON.stringify(arr)); } catch(e) {}
+}
+
+// Apply saved order to the DOM: move strength cards into #strengthCards
+// in the configured sequence. Also reorders chart tabs to match.
+function applyStrengthOrder() {
+  var container = document.getElementById('strengthCards');
+  var customContainer = document.getElementById('customMachineCards');
+  if (!container) return;
+  var order = getStrengthOrder();
+  order.forEach(function(id){
+    var card = document.getElementById('card-' + id);
+    if (card && card.parentNode !== container) {
+      container.appendChild(card);
+    } else if (card) {
+      container.appendChild(card); // re-append = move to end
+    }
+  });
+  // Hide the now-empty custom container (custom cards moved into main)
+  if (customContainer) customContainer.style.display = 'none';
+
+  // Reorder chart tabs to match (only non-STS strength tabs)
+  var chartTabs = document.getElementById('chartTabs');
+  if (chartTabs) {
+    order.forEach(function(id){
+      var tab = chartTabs.querySelector('[data-ex="' + id + '"]');
+      if (tab) chartTabs.appendChild(tab);
+    });
+    // STS tab goes last
+    var stsTab = chartTabs.querySelector('[data-ex="sts"]');
+    if (stsTab) chartTabs.appendChild(stsTab);
+  }
+}
+
+// ── Reorder modal UI ──
+function openReorderModal() {
+  document.getElementById('reorderModal').classList.remove('hidden');
+  renderReorderList();
+}
+
+function closeReorderModal() {
+  document.getElementById('reorderModal').classList.add('hidden');
+}
+
+function renderReorderList() {
+  var ul = document.getElementById('reorderList');
+  ul.innerHTML = '';
+  var order = getStrengthOrder();
+
+  order.forEach(function(id, idx){
+    var m = getMachineById(id);
+    if (!m) return;
+    var isCustom = !BUILTIN_DEFAULTS[id];
+
+    var li = document.createElement('li');
+    li.className = 'reorder-item';
+    li.dataset.id = id;
+    li.draggable = true;
+
+    var handle = document.createElement('span');
+    handle.className = 'reorder-handle';
+    handle.innerHTML = '⋮⋮';
+    handle.title = 'Drag to reorder';
+
+    var nameSpan = document.createElement('span');
+    nameSpan.className = 'reorder-name';
+    nameSpan.textContent = m.name;
+    if (isCustom) {
+      var typeBadge = document.createElement('span');
+      typeBadge.className = 'reorder-type';
+      typeBadge.textContent = 'custom';
+      nameSpan.appendChild(typeBadge);
+    }
+
+    var btns = document.createElement('span');
+    btns.className = 'reorder-btns';
+
+    var upBtn = document.createElement('button');
+    upBtn.type = 'button';
+    upBtn.className = 'reorder-btn';
+    upBtn.textContent = '▲';
+    upBtn.title = 'Move up';
+    upBtn.setAttribute('aria-label', 'Move ' + m.name + ' up');
+    upBtn.disabled = (idx === 0);
+    upBtn.addEventListener('click', function(){ moveReorderItem(id, -1); });
+
+    var downBtn = document.createElement('button');
+    downBtn.type = 'button';
+    downBtn.className = 'reorder-btn';
+    downBtn.textContent = '▼';
+    downBtn.title = 'Move down';
+    downBtn.setAttribute('aria-label', 'Move ' + m.name + ' down');
+    downBtn.disabled = (idx === order.length - 1);
+    downBtn.addEventListener('click', function(){ moveReorderItem(id, 1); });
+
+    btns.appendChild(upBtn);
+    btns.appendChild(downBtn);
+
+    li.appendChild(handle);
+    li.appendChild(nameSpan);
+    li.appendChild(btns);
+
+    // Drag & drop support (desktop)
+    li.addEventListener('dragstart', function(e){
+      li.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', id);
+    });
+    li.addEventListener('dragend', function(){
+      li.classList.remove('dragging');
+      ul.querySelectorAll('.reorder-item').forEach(function(x){ x.classList.remove('drag-over'); });
+    });
+    li.addEventListener('dragover', function(e){
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      ul.querySelectorAll('.reorder-item').forEach(function(x){ x.classList.remove('drag-over'); });
+      li.classList.add('drag-over');
+    });
+    li.addEventListener('drop', function(e){
+      e.preventDefault();
+      var draggedId = e.dataTransfer.getData('text/plain');
+      if (draggedId && draggedId !== id) {
+        reorderItemBeforeTarget(draggedId, id);
+      }
+    });
+
+    ul.appendChild(li);
+  });
+}
+
+function moveReorderItem(id, delta) {
+  var order = getStrengthOrder();
+  var idx = order.indexOf(id);
+  if (idx < 0) return;
+  var newIdx = idx + delta;
+  if (newIdx < 0 || newIdx >= order.length) return;
+  order.splice(idx, 1);
+  order.splice(newIdx, 0, id);
+  setStrengthOrder(order);
+  renderReorderList();
+}
+
+function reorderItemBeforeTarget(draggedId, targetId) {
+  var order = getStrengthOrder();
+  var dIdx = order.indexOf(draggedId);
+  var tIdx = order.indexOf(targetId);
+  if (dIdx < 0 || tIdx < 0) return;
+  order.splice(dIdx, 1);
+  // If we removed from before the target, target index shifts down by 1
+  var insertAt = order.indexOf(targetId);
+  order.splice(insertAt, 0, draggedId);
+  setStrengthOrder(order);
+  renderReorderList();
+}
+
+function saveReorder() {
+  // Order already saved on each move; this just closes the modal
+  // and applies the order to the page
+  applyStrengthOrder();
+  closeReorderModal();
+  showToast('✓ Order saved');
+}
+
+function resetReorderToDefault() {
+  if (!confirm('Reset exercise order to default?')) return;
+  try { localStorage.removeItem(STRENGTH_ORDER_KEY); } catch(e) {}
+  renderReorderList();
+  showToast('✓ Order reset');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // HISTORY
 // ═══════════════════════════════════════════════════════════════════════
 function getExLabel(exId) {
@@ -1136,7 +1499,7 @@ function renderHistory() {
   var list = document.getElementById('historyList');
   list.innerHTML = '';
   if (sessions.length === 0) {
-    list.innerHTML = '<p style="color:var(--muted);font-size:.78rem;padding:.35rem 0;">No sessions yet. Save your first workout!</p>';
+    list.innerHTML = '<p style="color:var(--muted);font-size:.78rem;padding:.8rem 0;text-align:center;">No sessions yet — save your first workout to see your history here.</p>';
     return;
   }
   sessions.slice(0,15).forEach(function(s){
@@ -1148,18 +1511,101 @@ function renderHistory() {
       var maxW = 0;
       filled.forEach(function(set){ if (parseFloat(set.weight) > maxW) maxW = parseFloat(set.weight); });
       var label = getExLabel(exId);
-      return maxW > 0 ? label + ' ' + maxW + 'lbs×' + filled.length : label + ' ' + filled.length + 'sets';
+      return maxW > 0 ? label + ' ' + maxW + 'lbs×' + filled.length : label + ' ' + filled.length + 'sets';
     }).filter(Boolean);
+
     var div = document.createElement('div'); div.className = 'history-item';
-    var dateSpan = document.createElement('span'); dateSpan.className = 'history-date'; dateSpan.textContent = s.date;
+    var dateSpan = document.createElement('span'); dateSpan.className = 'history-date';
+    dateSpan.textContent = s.date;
+
     var summSpan = document.createElement('span'); summSpan.className = 'history-summary';
     summSpan.textContent = summary.join(' · ') || 'No sets logged';
-    var delBtn = document.createElement('button'); delBtn.className = 'btn btn-danger'; delBtn.textContent = '✕';
+
+    var actions = document.createElement('span'); actions.className = 'history-actions';
+
+    var exportBtn = document.createElement('button');
+    exportBtn.type = 'button';
+    exportBtn.className = 'history-action-btn';
+    exportBtn.textContent = '↓';
+    exportBtn.title = 'Export this workout';
+    exportBtn.setAttribute('aria-label', 'Export workout from ' + s.date);
+    exportBtn.addEventListener('click', function(e){ e.stopPropagation(); exportSingleSession(s.date); });
+
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'history-action-btn history-action-del';
+    delBtn.textContent = '✕';
+    delBtn.title = 'Delete this workout';
+    delBtn.setAttribute('aria-label', 'Delete workout from ' + s.date);
     delBtn.addEventListener('click', function(e){ deleteSession(s.date, e); });
-    div.appendChild(dateSpan); div.appendChild(summSpan); div.appendChild(delBtn);
-    div.addEventListener('click', function(e){ if (e.target !== delBtn) loadSessionData(s); });
+
+    actions.appendChild(exportBtn);
+    actions.appendChild(delBtn);
+
+    div.appendChild(dateSpan); div.appendChild(summSpan); div.appendChild(actions);
+    div.addEventListener('click', function(e){
+      if (!actions.contains(e.target)) loadSessionData(s);
+    });
     list.appendChild(div);
   });
+}
+
+// Export a single session — presents format choice (CSV or JSON)
+function exportSingleSession(dateStr) {
+  var session = getSessions().find(function(s){ return s.date === dateStr; });
+  if (!session) return;
+  var format = prompt(
+    'Export workout from ' + dateStr + '\n\nType "csv" for spreadsheet or "json" for full data backup:',
+    'csv'
+  );
+  if (format === null) return;
+  format = format.toLowerCase().trim();
+  if (format === 'csv') {
+    exportSessionCSV(session);
+  } else if (format === 'json') {
+    exportSessionJSON(session);
+  } else {
+    alert('Please enter "csv" or "json".');
+  }
+}
+
+function exportSessionCSV(session) {
+  var rows = [['Date','Exercise','Set #','Weight (lbs)','Reps','Volume','Notes']];
+  allExerciseIds().forEach(function(exId){
+    var ex = session.exercises && session.exercises[exId];
+    if (!ex || !ex.sets || !ex.sets.length) return;
+    var label = EX_LABELS[exId] || (getMachineById(exId) ? getMachineById(exId).name : exId);
+    var notes = (ex.notes||'').replace(/"/g,'""');
+    ex.sets.forEach(function(set, i){
+      var w   = IS_BODYWEIGHT[exId] ? 'BW' : (parseFloat(set.weight)||'');
+      var r   = parseInt(set.reps)||'';
+      var vol = (!IS_BODYWEIGHT[exId] && w && r) ? w*r : '';
+      rows.push([session.date, label, i+1, w, r, vol, i===0?'"'+notes+'"':'']);
+    });
+  });
+  if (session.cardio && (session.cardio.time || session.cardio.miles)) {
+    rows.push([session.date, 'Cardio Bike', 'cardio', '',
+               session.cardio.time || '',
+               session.cardio.miles || '',
+               '"Level: ' + (session.cardio.level||'') + '"']);
+  }
+  triggerDownload(rows.map(function(r){ return r.join(','); }).join('\n'),
+                  'text/csv',
+                  'scottfit_' + session.date + '.csv');
+  showToast('✓ Workout exported as CSV');
+}
+
+function exportSessionJSON(session) {
+  var payload = {
+    version: 3,
+    exportedAt: new Date().toISOString(),
+    type: 'single-session',
+    session: session
+  };
+  triggerDownload(JSON.stringify(payload, null, 2),
+                  'application/json',
+                  'scottfit_' + session.date + '.json');
+  showToast('✓ Workout exported as JSON');
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1950,7 +2396,9 @@ function renderCustomMachineCards() {
     var tbody = document.createElement('tbody'); tbody.id = 'tbody-' + m.id;
     table.appendChild(tbody); body.appendChild(table);
 
-    var addBtn = document.createElement('button'); addBtn.className = 'add-set-btn';
+    var addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'add-set-btn';
     addBtn.textContent = '+ Add Set';
     addBtn.addEventListener('click', function(){ addSet(m.id); });
     body.appendChild(addBtn);
@@ -1966,6 +2414,7 @@ function renderCustomMachineCards() {
 
     // Add chart tab
     var tab = document.createElement('button');
+    tab.type = 'button';
     tab.className = 'chart-tab'; tab.dataset.ex = m.id; tab.dataset.custom = '1';
     tab.textContent = m.name.split(' ').slice(0,2).join(' ');
     tab.addEventListener('click', function(){
@@ -1974,6 +2423,11 @@ function renderCustomMachineCards() {
     });
     chartTabsEl.appendChild(tab);
   });
+
+  // Re-apply saved strength order so new/existing custom machines land in
+  // the right position alongside built-ins (safe no-op on initial boot
+  // before applyStrengthOrder exists on first call).
+  if (typeof applyStrengthOrder === 'function') applyStrengthOrder();
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2064,6 +2518,10 @@ document.addEventListener('DOMContentLoaded', function(){
   // Build weight source dropdown
   buildWeightSourceDropdown();
 
+  // Apply saved strength exercise order (moves DOM nodes into configured order)
+  // Must run AFTER renderCustomMachineCards so custom cards exist in DOM
+  applyStrengthOrder();
+
   // Populate from draft or seed from last session weights
   var draft = getDraft();
   if (draft) {
@@ -2074,6 +2532,33 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   updateStats(); renderHistory(); renderChart();
+
+  // Set initial dirty state based on whether there's an unsaved draft
+  if (draft) setDirty(true);
+
+  // ── Keyboard shortcuts ──
+  document.addEventListener('keydown', function(e) {
+    var mod = e.ctrlKey || e.metaKey;
+    // Cmd+S / Ctrl+S to save
+    if (mod && !e.shiftKey && (e.key === 's' || e.key === 'S')) {
+      e.preventDefault();
+      saveSession();
+    }
+    // Cmd+Shift+C / Ctrl+Shift+C to clear
+    if (mod && e.shiftKey && (e.key === 'c' || e.key === 'C')) {
+      e.preventDefault();
+      clearSession();
+    }
+  });
+
+  // ── Warn before leaving with unsaved changes ──
+  window.addEventListener('beforeunload', function(e){
+    if (isDirty) {
+      e.preventDefault();
+      e.returnValue = ''; // Chrome requires returnValue to be set
+      return '';
+    }
+  });
 
   // Open cardio + all strength cards by default for quick workout entry
   document.getElementById('card-cardio').classList.add('open');
