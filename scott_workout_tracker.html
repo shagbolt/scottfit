@@ -422,6 +422,44 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
 .reorder-btn:hover:not(:disabled){border-color:var(--accent3);color:var(--accent3);}
 .reorder-btn:disabled{opacity:.3;cursor:not-allowed;}
 
+/* ── Weekly plan card ── */
+.plan-card{
+  --phase:var(--accent);
+  background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--phase);
+  border-radius:6px;padding:.85rem 1rem .9rem;margin-bottom:1.3rem;
+}
+.plan-card[data-phase="BUILD"]{--phase:var(--accent);}
+.plan-card[data-phase="REBUILD"],.plan-card[data-phase="MAINTAIN"]{--phase:var(--accent);}
+.plan-card[data-phase="DELOAD"],.plan-card[data-phase="RETURN"]{--phase:var(--accent2);}
+.plan-card[data-phase="RECOVERY"],.plan-card[data-phase="WALK RETURN"]{--phase:var(--accent3);}
+.plan-card[data-phase="NONE"]{--phase:var(--border);}
+.plan-head{display:flex;align-items:baseline;gap:.7rem;flex-wrap:wrap;}
+.plan-week{font-family:'Bebas Neue',cursive;font-size:2.1rem;line-height:1;letter-spacing:.02em;color:var(--text);}
+.phase-chip{
+  font-family:'DM Mono',monospace;font-size:.68rem;letter-spacing:.04em;
+  color:var(--phase);border:1px solid var(--phase);border-radius:3px;padding:.12rem .45rem;
+}
+.plan-card[data-phase="BUILD"] .phase-chip{background:var(--phase);color:#0f0f0d;}
+[data-theme="light"] .plan-card[data-phase="BUILD"] .phase-chip{color:#fff;}
+.plan-dates{font-size:.78rem;color:var(--muted);margin-top:.25rem;}
+.plan-note{font-size:.86rem;line-height:1.45;color:var(--text);margin:.55rem 0 0;max-width:62ch;}
+.plan-note:empty{display:none;}
+.plan-source{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:.75rem;padding-top:.65rem;border-top:1px solid var(--border);}
+.plan-source label{font-size:.78rem;color:var(--muted);}
+.plan-source select{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  font-family:'DM Sans',sans-serif;font-size:.82rem;padding:.4rem .55rem;border-radius:4px;cursor:pointer;max-width:220px;
+}
+.plan-source select:focus{outline:none;border-color:var(--accent3);}
+
+/* ── Strength card: this-week line + rep target hint ── */
+.exercise-instruction.plan-line{font-family:'DM Sans',sans-serif;font-size:.8rem;letter-spacing:0;}
+.exercise-instruction.off-plan{background:transparent;border-color:var(--border);color:var(--muted);}
+.rep-target{font-family:'DM Mono',monospace;font-size:.62rem;color:var(--muted);padding-left:.25rem;white-space:nowrap;}
+.rep-wrap{display:inline-flex;align-items:center;}
+
+.modal-subhead{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;}
+
 /* ── iOS: prevent zoom on input focus (font-size >= 16px fix) ── */
 @media screen and (max-width:768px){
   .sets-table input[type="number"],
@@ -455,24 +493,32 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
 
   <div class="stats-strip">
     <div class="stat"><div class="stat-value" id="statSessions">0</div><div class="stat-label">Sessions</div></div>
-    <div class="stat"><div class="stat-value" id="statStreak">0</div><div class="stat-label">Day Streak</div></div>
+    <div class="stat"><div class="stat-value" id="statPlanWeek">—</div><div class="stat-label" id="statPlanWeekLabel">Plan week</div></div>
     <div class="stat"><div class="stat-value" id="statLastDate" style="font-size:1rem;padding-top:.3rem;">—</div><div class="stat-label">Last Workout</div></div>
   </div>
 
   <div class="session-bar">
     <label for="sessionDate">Session date:</label>
-    <input type="date" id="sessionDate">
+    <input type="date" id="sessionDate" onchange="onSessionDateChange()">
     <span id="sessionSavedBadge" style="display:none;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--accent);background:rgba(212,240,96,.12);border:1px solid rgba(212,240,96,.3);border-radius:10px;padding:.2rem .6rem;">✓ saved</span>
   </div>
 
-  <!-- Last-session weight loader -->
-  <div class="last-session-bar">
-    <label>Pre-fill weights from:</label>
-    <select id="weightSourceSelect" onchange="applyWeightSource()">
-      <option value="last">Last session</option>
-    </select>
-    <span class="hint">— weights auto-filled; edit freely</span>
-  </div>
+  <!-- This week's plan (from the strength roadmap) -->
+  <section class="plan-card" id="planCard" aria-live="polite">
+    <div class="plan-head">
+      <div class="plan-week" id="planWeek">No plan</div>
+      <span class="phase-chip" id="planPhase" hidden></span>
+    </div>
+    <div class="plan-dates" id="planDates"></div>
+    <p class="plan-note" id="planNote"></p>
+    <div class="plan-source">
+      <label for="weightSourceSelect">Fill weights from</label>
+      <select id="weightSourceSelect" onchange="applyWeightSource()">
+        <option value="plan">This week's plan</option>
+        <option value="last">Last session</option>
+      </select>
+    </div>
+  </section>
 
   <!-- WARM UP -->
   <div class="exercise-section">
@@ -519,76 +565,7 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
         <button type="button" class="section-toggle-btn" onclick="toggleAllStrength(false)">collapse all</button>
       </div>
     </div>
-    <div id="strengthCards">
-      <!-- Built-in machines (order will be applied from localStorage on boot) -->
-      <div class="exercise-card" id="card-chest-press">
-        <div class="exercise-header" onclick="toggleCard('chest-press')">
-          <span class="exercise-name">Chest Press</span>
-          <span class="exercise-meta">Arm: 2 &nbsp;|&nbsp; Seat: 4–5</span>
-          <span class="chevron">&#9660;</span>
-        </div>
-        <div class="exercise-body">
-          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
-          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-chest-press"></tbody></table>
-          <button type="button" class="add-set-btn" onclick="addSet('chest-press')">+ Add Set</button>
-          <div class="notes-area"><textarea id="notes-chest-press" placeholder="Notes..."></textarea></div>
-        </div>
-      </div>
-      <div class="exercise-card" id="card-row">
-        <div class="exercise-header" onclick="toggleCard('row')">
-          <span class="exercise-name">Row</span>
-          <span class="exercise-meta">Chest: 3 &nbsp;|&nbsp; Seat: 5</span>
-          <span class="chevron">&#9660;</span>
-        </div>
-        <div class="exercise-body">
-          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
-          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-row"></tbody></table>
-          <button type="button" class="add-set-btn" onclick="addSet('row')">+ Add Set</button>
-          <div class="notes-area"><textarea id="notes-row" placeholder="Notes..."></textarea></div>
-        </div>
-      </div>
-      <div class="exercise-card" id="card-leg-curl">
-        <div class="exercise-header" onclick="toggleCard('leg-curl')">
-          <span class="exercise-name">Seated Leg Curl</span>
-          <span class="exercise-meta"></span>
-          <span class="chevron">&#9660;</span>
-        </div>
-        <div class="exercise-body">
-          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
-          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-leg-curl"></tbody></table>
-          <button type="button" class="add-set-btn" onclick="addSet('leg-curl')">+ Add Set</button>
-          <div class="notes-area"><textarea id="notes-leg-curl" placeholder="Notes..."></textarea></div>
-        </div>
-      </div>
-      <div class="exercise-card" id="card-leg-press">
-        <div class="exercise-header" onclick="toggleCard('leg-press')">
-          <span class="exercise-name">Seated Leg Press</span>
-          <span class="exercise-meta">Seat: 10</span>
-          <span class="chevron">&#9660;</span>
-        </div>
-        <div class="exercise-body">
-          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
-          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-leg-press"></tbody></table>
-          <button type="button" class="add-set-btn" onclick="addSet('leg-press')">+ Add Set</button>
-          <div class="notes-area"><textarea id="notes-leg-press" placeholder="Notes..."></textarea></div>
-        </div>
-      </div>
-      <div class="exercise-card" id="card-leg-ext">
-        <div class="exercise-header" onclick="toggleCard('leg-ext')">
-          <span class="exercise-name">Leg Extension</span>
-          <span class="exercise-meta"></span>
-          <span class="chevron">&#9660;</span>
-        </div>
-        <div class="exercise-body">
-          <div class="exercise-instruction"><span class="dot">&#9679;</span>&nbsp; 3 sets × 15 reps @ 30 lbs — increase weight as you progress</div>
-          <table class="sets-table"><thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead><tbody id="tbody-leg-ext"></tbody></table>
-          <button type="button" class="add-set-btn" onclick="addSet('leg-ext')">+ Add Set</button>
-          <div class="notes-area"><textarea id="notes-leg-ext" placeholder="Notes..."></textarea></div>
-        </div>
-      </div>
-    </div>
-    <!-- Custom machine cards rendered here by JS -->
-    <div id="customMachineCards"></div>
+    <div id="strengthCards"></div>
   </div>
 
   <hr style="border:none;border-top:1px solid var(--border);margin:.2rem 0 1.6rem;opacity:.5;">
@@ -629,26 +606,6 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
     </div>
   </div>
 
-  <!-- STRETCHES -->
-  <div class="exercise-section">
-    <div class="section-label">Stretches</div>
-    <div class="checklist-card" id="card-stretches">
-      <div class="exercise-header" onclick="toggleCard('stretches')">
-        <span class="exercise-name">Stretches</span>
-        <span class="exercise-meta">30 sec each side</span>
-        <span class="chevron">&#9660;</span>
-      </div>
-      <div class="exercise-body">
-        <div class="check-list">
-          <label class="check-item"><input type="checkbox" id="chk-cross-arm" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Cross Arm Stretch <em>— each arm, 30 sec</em></span></label>
-          <label class="check-item"><input type="checkbox" id="chk-figure4" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Figure 4 Stretch <em>— each leg, 30 sec</em></span></label>
-          <label class="check-item"><input type="checkbox" id="chk-hamstring" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Hamstring Stretch <em>— each leg, 30 sec</em></span></label>
-          <label class="check-item"><input type="checkbox" id="chk-touch-toes" onchange="autoDraft()"><span class="check-box"></span><span class="check-label">Touch Toes Stretch <em>(seated) — each leg, 30 sec</em></span></label>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- PROGRESS CHARTS -->
   <div class="exercise-section">
     <div class="chart-section-toggle" onclick="toggleChartSection()" id="chartSectionToggle">
@@ -656,14 +613,7 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
       <span class="chevron" id="chartChevron" style="color:var(--muted);font-size:.72rem;">&#9660;</span>
     </div>
     <div class="chart-section-body" id="chartSectionBody">
-    <div class="chart-tabs" id="chartTabs">
-      <button type="button" class="chart-tab active" data-ex="chest-press">Chest Press</button>
-      <button type="button" class="chart-tab" data-ex="row">Row</button>
-      <button type="button" class="chart-tab" data-ex="leg-curl">Leg Curl</button>
-      <button type="button" class="chart-tab" data-ex="leg-press">Leg Press</button>
-      <button type="button" class="chart-tab" data-ex="leg-ext">Leg Ext</button>
-      <button type="button" class="chart-tab" data-ex="sts">STS</button>
-    </div>
+    <div class="chart-tabs" id="chartTabs"></div>
     <div class="metric-tabs" id="metricTabs">
       <button type="button" class="metric-tab active" data-metric="max_weight">Max Weight</button>
       <button type="button" class="metric-tab" data-metric="total_volume">Total Volume</button>
@@ -711,19 +661,19 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
       <h2 id="machineFormTitle">New Machine</h2>
       <div class="modal-row">
         <label>Machine Name</label>
-        <input type="text" id="mf-name" placeholder="e.g. Shoulder Press" style="transition:opacity .15s;">
+        <input type="text" id="mf-name" placeholder="e.g. Lat Pulldown" style="transition:opacity .15s;">
       </div>
       <div class="modal-row">
         <label>Default Sets</label>
-        <input type="text" id="mf-sets" placeholder="3" style="width:80px;">
+        <input type="text" id="mf-sets" placeholder="2" inputmode="numeric" style="width:80px;">
       </div>
       <div class="modal-row">
         <label>Default Reps</label>
-        <input type="text" id="mf-reps" placeholder="15" style="width:80px;">
+        <input type="text" id="mf-reps" placeholder="15" inputmode="numeric" style="width:80px;">
       </div>
       <div class="modal-row">
         <label>Default Weight (lbs)</label>
-        <input type="text" id="mf-weight" placeholder="30" style="width:80px;">
+        <input type="text" id="mf-weight" placeholder="30" inputmode="decimal" style="width:80px;">
       </div>
       <div class="modal-row">
         <label>Machine Settings <span style="color:var(--muted);font-size:.68rem;font-family:DM Mono">(seat / arm / chest positions)</span></label>
@@ -798,6 +748,23 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
     </div>
 
     <div class="divider"></div>
+
+    <div style="margin-top:.9rem;">
+      <p class="modal-subhead">Strength roadmap</p>
+      <p id="roadmapStatus" style="font-size:.78rem;color:var(--text);margin-bottom:.5rem;line-height:1.5;"></p>
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:.7rem;line-height:1.5;">
+        When your roadmap spreadsheet changes, load the new .xlsx here. The app reads the Weekly Roadmap sheet and fills each workout from the matching week.
+      </p>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
+        <label class="btn btn-blue btn-sm" style="cursor:pointer;">
+          Load roadmap (.xlsx) <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;" onchange="loadRoadmapFile(event)">
+        </label>
+        <button type="button" class="btn btn-ghost btn-sm" id="roadmapRevertBtn" onclick="revertRoadmap()">Use built-in roadmap</button>
+      </div>
+      <p style="font-size:.7rem;color:var(--red);font-family:'DM Mono',monospace;margin-top:.5rem;" id="roadmapError"></p>
+    </div>
+
+    <div class="divider"></div>
     <div class="modal-actions">
       <button type="button" class="btn btn-ghost btn-sm" onclick="closeDataModal()">Close</button>
     </div>
@@ -827,19 +794,29 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
 // ═══════════════════════════════════════════════════════════════════════
 // CONFIG — built-in exercises
 // ═══════════════════════════════════════════════════════════════════════
-var BUILTIN_EXERCISES = ['sts','chest-press','row','leg-curl','leg-press','leg-ext'];
-var DEFAULT_WEIGHT    = {'chest-press':30,'row':30,'leg-curl':30,'leg-press':30,'leg-ext':30};
+// Strength machines in default workout order (Chest → Legs → Row → Shoulder)
+var STRENGTH_BUILTINS = ['chest-press','leg-press','leg-curl','leg-ext','hip-abd','row','shoulder-press'];
+var BUILTIN_EXERCISES = ['sts'].concat(STRENGTH_BUILTINS);
+var DEFAULT_WEIGHT    = {'chest-press':30,'row':30,'leg-curl':30,'leg-press':30,'leg-ext':30,'shoulder-press':20,'hip-abd':30};
 var IS_BODYWEIGHT     = {'sts':true};
 var STS_DEFAULT_REPS  = 10;
 var DEFAULT_REPS      = 15;
-var DEFAULT_SETS      = 3;
+var DEFAULT_SETS      = 2;
 var EX_LABELS = {
   'sts':'Sit-to-Stand','chest-press':'Chest Press','row':'Row',
-  'leg-curl':'Seated Leg Curl','leg-press':'Seated Leg Press','leg-ext':'Leg Extension'
+  'leg-curl':'Seated Leg Curl','leg-press':'Seated Leg Press','leg-ext':'Leg Extension',
+  'shoulder-press':'Shoulder Press','hip-abd':'Hip Abduction'
 };
 var EX_SHORT = {
-  'sts':'STS','chest-press':'CP','row':'Row','leg-curl':'SLC','leg-press':'SLP','leg-ext':'LE'
+  'sts':'STS','chest-press':'CP','row':'Row','leg-curl':'SLC','leg-press':'SLP','leg-ext':'LE',
+  'shoulder-press':'SP','hip-abd':'HA'
 };
+var CHART_LABELS = {
+  'sts':'STS','chest-press':'Chest Press','row':'Row','leg-curl':'Leg Curl','leg-press':'Leg Press',
+  'leg-ext':'Leg Ext','shoulder-press':'Shoulder','hip-abd':'Hip Abd'
+};
+// Balance + cool-down checklist items (stretches removed)
+var CHECK_IDS = ['slb','tandem','side-stepper','grapevine','cooldown-lap'];
 var METRIC_LABELS = {
   'max_weight':'Max Weight (lbs)','total_volume':'Total Volume (lbs×reps)','total_reps':'Total Reps'
 };
@@ -849,15 +826,241 @@ var DRAFT_KEY     = 'scottfit_v3_draft';
 var MACHINES_KEY  = 'scottfit_v3_machines';
 var BSETTINGS_KEY = 'scottfit_v3_builtin_settings';
 var STRENGTH_ORDER_KEY = 'scottfit_v3_strength_order';
+var ROADMAP_KEY   = 'scottfit_v3_roadmap';
+var BACKUP_KEY    = 'scottfit_v3_backup_before_v4';
 
 // Default settings for built-in machines (editable by user, stored separately)
 var BUILTIN_DEFAULTS = {
-  'chest-press': { settings: [{type:'arm',   value:'2'}, {type:'seat', value:'4-5'}] },
-  'row':         { settings: [{type:'chest', value:'3'}, {type:'seat', value:'5'}]   },
-  'leg-curl':    { settings: [] },
-  'leg-press':   { settings: [{type:'seat',  value:'10'}] },
-  'leg-ext':     { settings: [] }
+  'chest-press':    { settings: [{type:'arm',   value:'2'}, {type:'seat', value:'4-5'}] },
+  'row':            { settings: [{type:'chest', value:'3'}, {type:'seat', value:'5'}]   },
+  'leg-curl':       { settings: [] },
+  'leg-press':      { settings: [{type:'seat',  value:'10'}] },
+  'leg-ext':        { settings: [] },
+  'shoulder-press': { settings: [] },
+  'hip-abd':        { settings: [] }
 };
+
+// ═══════════════════════════════════════════════════════════════════════
+// STRENGTH ROADMAP — built in from Scott-Strength-Roadmap-12mo-Revised.xlsx
+// (a newer roadmap loaded from the Data panel overrides this)
+// ═══════════════════════════════════════════════════════════════════════
+var BUILTIN_ROADMAP_NAME = 'Scott-Strength-Roadmap-12mo-Revised.xlsx';
+var BUILTIN_ROADMAP = {"lifts":[{"name":"Chest Press","reps":["10","12-15"]},{"name":"Row","reps":["12","15"]},{"name":"Shoulder Press","reps":["10-12","10-12"]},{"name":"Leg Press","reps":["12-15","12-15"]},{"name":"Leg Curl","reps":["12-15","12-15"]},{"name":"Leg Extension","reps":["12-15","12-15"]},{"name":"Hip Abduction","reps":["15","15"]}],"weeks":[{"week":1,"start":"2026-06-01","phase":"REBUILD","note":"Start here. Establish baseline. No increases this month.","w":[[45,40],[50,45],[20,20],[75,75],[70,70],[75,75],[30,30]]},{"week":2,"start":"2026-06-08","phase":"REBUILD","note":"","w":[[45,40],[50,45],[20,20],[75,75],[70,70],[75,75],[35,35]]},{"week":3,"start":"2026-06-15","phase":"REBUILD","note":"","w":[[45,40],[50,45],[20,20],[75,75],[70,70],[75,75],[35,35]]},{"week":4,"start":"2026-06-22","phase":"REBUILD","note":"","w":[[45,40],[50,45],[20,20],[75,75],[70,70],[75,75],[35,35]]},{"week":5,"start":"2026-06-29","phase":"BUILD","note":"First increases possible. Only move up if 2-session rule satisfied.","w":[[45,40],[55,50],[20,20],[80,80],[75,75],[80,80],[35,35]]},{"week":6,"start":"2026-07-06","phase":"BUILD","note":"↑ Chest Press +5  ·  ↑ Hip Abduction +5","w":[[50,45],[55,50],[20,20],[80,80],[75,75],[80,80],[35,35]]},{"week":7,"start":"2026-07-13","phase":"BUILD","note":"","w":[[50,45],[55,50],[20,20],[80,80],[75,75],[80,80],[40,40]]},{"week":8,"start":"2026-07-20","phase":"DELOAD","note":"DELOAD WEEK — 70% weight, same reps. Recovery is the work.","w":[[35,30],[40,35],[15,15],[55,55],[50,50],[55,55],[30,30]]},{"week":9,"start":"2026-07-27","phase":"BUILD","note":"Last full week before right eye surgery (Aug 13). Note your weights — these are your return targets.","w":[[50,45],[60,55],[20,20],[85,85],[80,80],[85,85],[40,40]]},{"week":10,"start":"2026-08-03","phase":"BUILD","note":"Normal training week. Surgery is Aug 13 (Thu) — train Mon/Tue/Wed as usual.","w":[[50,45],[60,55],[20,20],[85,85],[80,80],[85,85],[40,40]]},{"week":11,"start":"2026-08-10","phase":"RECOVERY","note":"Mon–Wed normal. 🏥 RIGHT EYE SURGERY Thu Aug 13. Rest Thu & Fri. No strength Thu onward.","w":null},{"week":12,"start":"2026-08-17","phase":"RECOVERY","note":"Right eye recovery. No strength, no walking. Short walk Wed/Thu OK only if surgeon explicitly clears.","w":null},{"week":13,"start":"2026-08-24","phase":"RECOVERY","note":"Right eye recovery – full rest (11 days post-op). No strength, no walking.","w":null},{"week":14,"start":"2026-08-31","phase":"RECOVERY","note":"Right eye recovery – full rest (18 days post-op). Left eye surgery coming Sep 10.","w":null},{"week":15,"start":"2026-09-07","phase":"RECOVERY","note":"Mon Sep 7 walk OK. Tue Sep 8 strength OK. 🏥 LEFT EYE SURGERY Wed Sep 10. Rest Wed–Fri.","w":null},{"week":16,"start":"2026-09-14","phase":"RECOVERY","note":"Left eye recovery — full rest. ~4 days post-op at start of week. No walking, no strength.","w":null},{"week":17,"start":"2026-09-21","phase":"WALK RETURN","note":"Walking returns: 1 mi M/W/F (~11 days post left eye). No strength yet — confirm surgeon clearance.","w":null},{"week":18,"start":"2026-09-28","phase":"RETURN","note":"First strength session since Sep 8. 60% of pre-op weights. Short, light, careful. Stop if anything feels off.","w":[[30,25],[35,35],[15,15],[50,50],[50,50],[50,50],[30,30]]},{"week":19,"start":"2026-10-05","phase":"REBUILD","note":"Re-ramp: ~73% of pre-op. Move with caution.","w":[[35,35],[45,40],[15,15],[60,60],[60,60],[60,60],[30,30]]},{"week":20,"start":"2026-10-12","phase":"REBUILD","note":"Re-ramp: ~87% of pre-op.","w":[[45,40],[50,50],[20,20],[75,75],[70,70],[75,75],[35,35]]},{"week":21,"start":"2026-10-19","phase":"REBUILD","note":"Back to pre-op weights. Two-session rule resumes for further increases.","w":[[50,45],[60,55],[20,20],[85,85],[80,80],[85,85],[40,40]]},{"week":22,"start":"2026-10-26","phase":"BUILD","note":"Normal progression resumes. Apply two-session rule for increases.","w":[[50,45],[60,55],[20,20],[85,85],[80,80],[85,85],[40,40]]},{"week":23,"start":"2026-11-02","phase":"BUILD","note":"↑ Row +5  ·  ↑ Leg Press +5  ·  ↑ Leg Curl +5  ·  🎯 Leg Extension at target","w":[[50,45],[65,60],[20,20],[90,90],[85,85],[90,85],[40,40]]},{"week":24,"start":"2026-11-09","phase":"DELOAD","note":"DELOAD WEEK — 70% weight, same reps. Recovery is the work.","w":[[35,30],[45,40],[15,15],[65,65],[60,60],[65,60],[30,30]]},{"week":25,"start":"2026-11-16","phase":"BUILD","note":"↑ Chest Press +20  ·  ↑ Row +20  ·  ↑ Shoulder Press +5  ·  ↑ Leg Press +25  ·  ↑ Leg Curl +25  ·  🎯 Leg Extension at target  ·  ↑ Hip Abduction +15","w":[[55,50],[65,60],[20,20],[90,90],[85,85],[90,85],[40,40]]},{"week":26,"start":"2026-11-23","phase":"BUILD","note":"","w":[[55,50],[65,60],[20,20],[90,90],[85,85],[90,85],[45,45]]},{"week":27,"start":"2026-11-30","phase":"BUILD","note":"🎯 Row at target  ·  ↑ Shoulder Press +2.5  ·  ↑ Leg Press +5  ·  🎯 Leg Curl at target","w":[[55,50],[70,65],[25,25],[95,95],[90,85],[90,85],[45,45]]},{"week":28,"start":"2026-12-07","phase":"BUILD","note":"","w":[[55,50],[70,65],[25,25],[95,95],[90,85],[90,85],[45,45]]},{"week":29,"start":"2026-12-14","phase":"BUILD","note":"","w":[[55,50],[70,65],[25,25],[95,95],[90,85],[90,85],[45,45]]},{"week":30,"start":"2026-12-21","phase":"BUILD","note":"","w":[[55,50],[70,65],[25,25],[95,95],[90,85],[90,85],[45,45]]},{"week":31,"start":"2026-12-28","phase":"BUILD","note":"🎯 Chest Press at target  ·  ↑ Leg Press +5  ·  ↑ Hip Abduction +5","w":[[60,55],[70,65],[25,25],[100,100],[90,85],[90,85],[50,50]]},{"week":32,"start":"2027-01-04","phase":"DELOAD","note":"DELOAD WEEK — 70% weight, same reps. Recovery is the work.","w":[[40,40],[50,45],[20,20],[70,70],[65,60],[65,60],[30,30]]},{"week":33,"start":"2027-01-11","phase":"BUILD","note":"🎯 Chest Press at target  ·  🎯 Row at target  ·  ↑ Shoulder Press +7.5  ·  ↑ Leg Press +30  ·  🎯 Leg Curl at target  ·  🎯 Leg Extension at target  ·  ↑ Hip Abduction +15","w":[[60,55],[70,65],[25,25],[100,100],[90,85],[90,85],[50,50]]},{"week":34,"start":"2027-01-18","phase":"BUILD","note":"","w":[[60,55],[70,65],[25,25],[100,100],[90,85],[90,85],[50,50]]},{"week":35,"start":"2027-01-25","phase":"BUILD","note":"↑ Shoulder Press +2.5  ·  ↑ Leg Press +5","w":[[60,55],[70,65],[25,25],[105,105],[90,85],[90,85],[50,50]]},{"week":36,"start":"2027-02-01","phase":"BUILD","note":"","w":[[60,55],[70,65],[25,25],[105,105],[90,85],[90,85],[50,50]]},{"week":37,"start":"2027-02-08","phase":"BUILD","note":"🎯 Hip Abduction at target","w":[[60,55],[70,65],[25,25],[105,105],[90,85],[90,85],[50,50]]},{"week":38,"start":"2027-02-15","phase":"BUILD","note":"","w":[[60,55],[70,65],[25,25],[105,105],[90,85],[90,85],[50,50]]},{"week":39,"start":"2027-02-22","phase":"BUILD","note":"↑ Leg Press +5","w":[[60,55],[70,65],[25,25],[110,110],[90,85],[90,85],[50,50]]},{"week":40,"start":"2027-03-01","phase":"DELOAD","note":"DELOAD WEEK — 70% weight, same reps. Recovery is the work.","w":[[40,40],[50,45],[20,20],[75,75],[65,60],[65,60],[30,30]]},{"week":41,"start":"2027-03-08","phase":"BUILD","note":"🎯 Chest Press at target  ·  🎯 Row at target  ·  ↑ Shoulder Press +5  ·  ↑ Leg Press +35  ·  🎯 Leg Curl at target  ·  🎯 Leg Extension at target  ·  🎯 Hip Abduction at target","w":[[60,55],[70,65],[25,25],[110,110],[90,85],[90,85],[50,50]]},{"week":42,"start":"2027-03-15","phase":"BUILD","note":"","w":[[60,55],[70,65],[25,25],[110,110],[90,85],[90,85],[50,50]]},{"week":43,"start":"2027-03-22","phase":"BUILD","note":"↑ Shoulder Press +2.5  ·  ↑ Leg Press +5","w":[[60,55],[70,65],[30,25],[115,115],[90,85],[90,85],[50,50]]},{"week":44,"start":"2027-03-29","phase":"BUILD","note":"","w":[[60,55],[70,65],[30,25],[115,115],[90,85],[90,85],[50,50]]},{"week":45,"start":"2027-04-05","phase":"BUILD","note":"","w":[[60,55],[70,65],[30,30],[115,115],[90,85],[90,85],[50,50]]},{"week":46,"start":"2027-04-12","phase":"BUILD","note":"","w":[[60,55],[70,65],[30,30],[115,115],[90,85],[90,85],[50,50]]},{"week":47,"start":"2027-04-19","phase":"BUILD","note":"🎯 Leg Press at target","w":[[60,55],[70,65],[30,30],[120,115],[90,85],[90,85],[50,50]]},{"week":48,"start":"2027-04-26","phase":"DELOAD","note":"DELOAD WEEK — 70% weight, same reps. Recovery is the work.","w":[[40,40],[50,45],[20,20],[85,80],[65,60],[65,60],[30,30]]},{"week":49,"start":"2027-05-03","phase":"BUILD","note":"🎯 Chest Press at target  ·  🎯 Row at target  ·  ↑ Shoulder Press +7.5  ·  🎯 Leg Press at target  ·  🎯 Leg Curl at target  ·  🎯 Leg Extension at target  ·  🎯 Hip Abduction at target","w":[[60,55],[70,65],[30,30],[120,115],[90,85],[90,85],[50,50]]},{"week":50,"start":"2027-05-10","phase":"BUILD","note":"","w":[[60,55],[70,65],[30,30],[120,115],[90,85],[90,85],[50,50]]},{"week":51,"start":"2027-05-17","phase":"MAINTAIN","note":"🎯 Shoulder Press at target","w":[[60,55],[70,65],[30,30],[120,115],[90,85],[90,85],[50,50]]},{"week":52,"start":"2027-05-24","phase":"MAINTAIN","note":"Maintenance mode — keep weights steady, focus on form.","w":[[60,55],[70,65],[30,30],[120,115],[90,85],[90,85],[50,50]]}]};
+
+// ═══════════════════════════════════════════════════════════════════════
+// ROADMAP PARSER — turns the "Weekly Roadmap" sheet (as rows of cell text)
+// into { lifts:[{name, reps:[...]}], weeks:[{week,start,phase,note,w}] }
+// ═══════════════════════════════════════════════════════════════════════
+function parseRoadmapRows(rows) {
+  function txt(v) { return (v === null || v === undefined) ? '' : String(v).trim(); }
+  var MONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+  // 1. Header row: first cell "Week" and some cell "Phase"
+  var hdr = -1, i, j;
+  for (i = 0; i < rows.length; i++) {
+    var r0 = rows[i] || [];
+    if (/^week$/i.test(txt(r0[0])) && r0.some(function(c){ return /^phase$/i.test(txt(c)); })) { hdr = i; break; }
+  }
+  if (hdr < 0) throw new Error('Could not find the header row (a row starting with "Week" that also has a "Phase" column).');
+  var head = rows[hdr] || [], sub = rows[hdr + 1] || [];
+  var colOf = -1, colPhase = -1, colNotes = -1;
+  for (j = 0; j < head.length; j++) {
+    var h = txt(head[j]).toLowerCase();
+    if (h === 'phase') colPhase = j;
+    else if (h.indexOf('week of') === 0) colOf = j;
+    else if (h.indexOf('note') >= 0 && colNotes < 0) colNotes = j;
+  }
+  if (colOf < 0) colOf = 1;
+
+  // 2. Lifts: names in the header row, one column per "Set N" beneath them
+  var lifts = [];
+  var end = colNotes > 0 ? colNotes : Math.max(head.length, sub.length);
+  for (j = colPhase + 1; j < end; j++) {
+    var name = txt(head[j]);
+    var subT = txt(sub[j]);
+    if (name) lifts.push({ name: name, cols: [], reps: [] });
+    if (lifts.length && /set/i.test(subT)) {
+      var L = lifts[lifts.length - 1];
+      L.cols.push(j);
+      var m = subT.match(/[×x]\s*(\d+(?:\s*[-–]\s*\d+)?)/);
+      L.reps.push(m ? m[1].replace(/\s+/g, '').replace('–', '-') : '');
+    }
+  }
+  lifts = lifts.filter(function(l){ return l.cols.length > 0; });
+  if (!lifts.length) throw new Error('Found the header row but no lift columns with "Set 1 / Set 2" beneath them.');
+
+  // 3. Week rows. Month banner rows ("June 2026") supply the year.
+  var year = null, prevMon = -1, weeks = [];
+  for (i = hdr + 2; i < rows.length; i++) {
+    var r = rows[i] || [];
+    var a = txt(r[0]);
+    var mh = a.match(/^([A-Za-z]+)\s+(\d{4})$/);
+    if (mh) { year = parseInt(mh[2], 10); prevMon = -1; continue; }
+    if (!/^\d+$/.test(a)) continue;
+    var om = txt(r[colOf]).match(/^([A-Za-z]{3})[A-Za-z]*\.?\s+(\d{1,2})/);
+    if (!om) continue;
+    var mon = MONTHS[om[1].toLowerCase()];
+    if (mon === undefined) continue;
+    if (year === null) year = new Date().getFullYear();
+    else if (prevMon >= 0 && mon < prevMon) year++; // Dec → Jan with no month banner
+    prevMon = mon;
+    var weights = lifts.map(function(l){
+      return l.cols.map(function(c){
+        var v = parseFloat(txt(r[c]).replace(/[^\d.]/g, ''));
+        return isNaN(v) ? null : v;
+      });
+    });
+    var any = weights.some(function(arr){ return arr.some(function(v){ return v !== null; }); });
+    weeks.push({
+      week: parseInt(a, 10),
+      start: year + '-' + pad(mon + 1) + '-' + pad(parseInt(om[2], 10)),
+      phase: txt(r[colPhase]).toUpperCase(),
+      note: colNotes >= 0 ? txt(r[colNotes]) : '',
+      w: any ? weights : null
+    });
+  }
+  if (!weeks.length) throw new Error('No week rows found (expected rows numbered 1, 2, 3… with a "Week of" date).');
+  return {
+    lifts: lifts.map(function(l){ return { name: l.name, reps: l.reps }; }),
+    weeks: weeks
+  };
+}
+
+function getRoadmap() {
+  try {
+    var stored = JSON.parse(localStorage.getItem(ROADMAP_KEY) || 'null');
+    if (stored && stored.weeks && stored.weeks.length && stored.lifts) return stored;
+  } catch(e) {}
+  return BUILTIN_ROADMAP;
+}
+
+// Roadmap lift name → app exercise id (built-ins first, then custom machines by name)
+function liftToExId(name) {
+  var n = String(name || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  var map = {
+    'chest press':'chest-press', 'row':'row', 'seated row':'row',
+    'shoulder press':'shoulder-press', 'leg press':'leg-press', 'seated leg press':'leg-press',
+    'leg curl':'leg-curl', 'seated leg curl':'leg-curl', 'leg extension':'leg-ext',
+    'hip abduction':'hip-abd', 'hip abductor':'hip-abd'
+  };
+  if (map[n]) return map[n];
+  var m = getMachines().find(function(x){ return x.name.toLowerCase().replace(/\s+/g, ' ').trim() === n; });
+  return m ? m.id : null;
+}
+
+function parseYMD(str) {
+  var p = String(str || '').split('-');
+  return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+}
+function fmtShort(d) { return d.toLocaleDateString('en-US', {month:'short', day:'numeric'}); }
+
+// The roadmap week that contains dateStr, or null (with .before/.after info)
+function getPlanWeek(dateStr) {
+  var plan = getRoadmap();
+  if (!dateStr) return null;
+  var d = parseYMD(dateStr).getTime();
+  for (var i = 0; i < plan.weeks.length; i++) {
+    var start = parseYMD(plan.weeks[i].start).getTime();
+    if (d >= start && d < start + 7 * 864e5) return plan.weeks[i];
+  }
+  return null;
+}
+
+function planLiftIndex(exId) {
+  var lifts = getRoadmap().lifts;
+  for (var i = 0; i < lifts.length; i++) if (liftToExId(lifts[i].name) === exId) return i;
+  return -1;
+}
+
+// Rep targets for each set, e.g. ['10','12-15'] — independent of the week
+function getPlanTargets(exId) {
+  var i = planLiftIndex(exId);
+  return i < 0 ? null : getRoadmap().lifts[i].reps.slice();
+}
+
+// Planned weights for this exercise in the week containing dateStr, or null
+function getPlanWeights(exId, dateStr) {
+  var i = planLiftIndex(exId);
+  var wk = getPlanWeek(dateStr);
+  if (i < 0 || !wk || !wk.w || !wk.w[i]) return null;
+  var arr = wk.w[i];
+  return arr.some(function(v){ return v !== null; }) ? arr.slice() : null;
+}
+
+function repLow(target) {
+  var m = String(target || '').match(/\d+/);
+  return m ? m[0] : '';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ONE-TIME MIGRATION — custom "Shoulder Press" / "Hip Abduction" machines
+// become the new built-ins, keeping their history, settings and position.
+// ═══════════════════════════════════════════════════════════════════════
+function migrateLegacyMachines() {
+  var machines = getMachines();
+  var moves = [];
+  machines.forEach(function(m){
+    var target = liftToExIdBuiltinOnly(m.name);
+    if (target && target !== m.id) moves.push({ from: m.id, to: target, settings: m.settings || [] });
+  });
+  if (!moves.length) return 0;
+
+  try {
+    if (!localStorage.getItem(BACKUP_KEY)) {
+      localStorage.setItem(BACKUP_KEY, JSON.stringify({
+        savedAt: new Date().toISOString(),
+        sessions: getSessions(), machines: machines,
+        builtinSettings: getBuiltinSettings(), draft: getDraft(),
+        order: localStorage.getItem(STRENGTH_ORDER_KEY)
+      }));
+    }
+  } catch(e) {}
+
+  function moveIn(obj) {
+    if (!obj || !obj.exercises) return;
+    moves.forEach(function(mv){
+      var src = obj.exercises[mv.from];
+      if (!src) return;
+      var dst = obj.exercises[mv.to];
+      var dstEmpty = !dst || !(dst.sets || []).some(function(x){ return x.weight || x.reps; });
+      if (dstEmpty) obj.exercises[mv.to] = src;
+      delete obj.exercises[mv.from];
+    });
+  }
+  var sessions = getSessions(); sessions.forEach(moveIn); setSessions(sessions);
+  var draft = getDraft(); if (draft) { moveIn(draft); setDraft(draft); }
+
+  var bs = getBuiltinSettings();
+  moves.forEach(function(mv){
+    if (!bs[mv.to] && mv.settings.length) bs[mv.to] = { settings: mv.settings };
+  });
+  setBuiltinSettings(bs);
+
+  try {
+    var order = JSON.parse(localStorage.getItem(STRENGTH_ORDER_KEY) || 'null');
+    if (Array.isArray(order)) {
+      moves.forEach(function(mv){
+        var k = order.indexOf(mv.from);
+        if (k >= 0) {
+          if (order.indexOf(mv.to) >= 0) order.splice(k, 1); else order[k] = mv.to;
+        }
+      });
+      localStorage.setItem(STRENGTH_ORDER_KEY, JSON.stringify(order));
+    }
+  } catch(e) {}
+
+  var fromIds = moves.map(function(mv){ return mv.from; });
+  setMachines(machines.filter(function(m){ return fromIds.indexOf(m.id) < 0; }));
+  return moves.length;
+}
+
+function liftToExIdBuiltinOnly(name) {
+  var n = String(name || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  if (/shoulder\s*press/.test(n)) return 'shoulder-press';
+  if (/hip\s*abduct/.test(n)) return 'hip-abd';
+  return null;
+}
 
 var chartInstance    = null;
 var editingMachineId = null;
@@ -920,15 +1123,15 @@ function toggleHistory() {
 // ═══════════════════════════════════════════════════════════════════════
 // SET ROWS
 // ═══════════════════════════════════════════════════════════════════════
-function appendSetRow(exId, num, weight, reps, lastWeight) {
+function appendSetRow(exId, num, weight, reps, lastWeight, target) {
   var tbody = document.getElementById('tbody-' + exId);
   if (!tbody) return;
   var bw = IS_BODYWEIGHT[exId];
+  var m  = getMachineById(exId);
   var w  = (weight !== undefined && weight !== null && weight !== '') ? weight
-           : (bw ? '' : (DEFAULT_WEIGHT[exId] !== undefined ? DEFAULT_WEIGHT[exId]
-             : (getMachineById(exId) ? getMachineById(exId).defaultWeight : '')));
+           : (bw ? '' : (DEFAULT_WEIGHT[exId] !== undefined ? DEFAULT_WEIGHT[exId] : (m ? m.defaultWeight : '')));
   var r  = (reps !== undefined && reps !== null && reps !== '') ? reps
-           : (bw ? STS_DEFAULT_REPS : (getMachineById(exId) ? getMachineById(exId).defaultReps : DEFAULT_REPS));
+           : (target ? repLow(target) : (bw ? STS_DEFAULT_REPS : (m ? m.defaultReps : DEFAULT_REPS)));
 
   var tr = document.createElement('tr');
 
@@ -943,16 +1146,17 @@ function appendSetRow(exId, num, weight, reps, lastWeight) {
     var wWrap = document.createElement('span');
     wWrap.style.display = 'inline-flex'; wWrap.style.alignItems = 'center';
     var wInput = document.createElement('input');
-    wInput.type = 'number'; wInput.min = '0'; wInput.step = '5';
+    wInput.type = 'number'; wInput.min = '0'; wInput.step = '2.5';
     wInput.inputMode = 'decimal';
     wInput.autocomplete = 'off';
+    wInput.setAttribute('aria-label', 'Set ' + num + ' weight in pounds');
     wInput.placeholder = '0'; wInput.value = w;
-    wInput.addEventListener('input', autoDraft);
+    wInput.addEventListener('input', onUserEdit);
     wInput.addEventListener('focus', function(){ this.select(); });
     wWrap.appendChild(wInput);
     if (lastWeight !== undefined && lastWeight !== null && lastWeight !== '') {
       var hint = document.createElement('span');
-      hint.className = 'last-wt'; hint.title = 'Previous session weight';
+      hint.className = 'last-wt'; hint.title = 'Weight last session';
       hint.textContent = '↑' + lastWeight;
       wWrap.appendChild(hint);
     }
@@ -961,20 +1165,30 @@ function appendSetRow(exId, num, weight, reps, lastWeight) {
   tr.appendChild(wTd);
 
   var rTd = document.createElement('td');
+  var rWrap = document.createElement('span'); rWrap.className = 'rep-wrap';
   var rInput = document.createElement('input');
   rInput.type = 'number'; rInput.min = '0';
   rInput.inputMode = 'numeric';
   rInput.autocomplete = 'off';
+  rInput.setAttribute('aria-label', 'Set ' + num + ' reps');
   rInput.placeholder = '0'; rInput.value = r;
-  rInput.addEventListener('input', autoDraft);
+  rInput.addEventListener('input', onUserEdit);
   rInput.addEventListener('focus', function(){ this.select(); });
-  rTd.appendChild(rInput);
+  rWrap.appendChild(rInput);
+  if (target) {
+    var tHint = document.createElement('span');
+    tHint.className = 'rep-target'; tHint.title = 'Rep target for this set';
+    tHint.textContent = '/' + String(target).replace('-', '–');
+    rWrap.appendChild(tHint);
+  }
+  rTd.appendChild(rWrap);
   tr.appendChild(rTd);
 
   var delTd = document.createElement('td');
   var delBtn = document.createElement('button');
   delBtn.type = 'button';
   delBtn.className = 'btn btn-danger'; delBtn.textContent = '✕';
+  delBtn.setAttribute('aria-label', 'Remove set ' + num);
   delBtn.addEventListener('click', function(){ removeSet(this); });
   delTd.appendChild(delBtn);
   tr.appendChild(delTd);
@@ -982,12 +1196,31 @@ function appendSetRow(exId, num, weight, reps, lastWeight) {
   tbody.appendChild(tr);
 }
 
+// Read the set rows currently on screen for one exercise
+function readSets(exId) {
+  var out = [];
+  var tbody = document.getElementById('tbody-' + exId);
+  if (!tbody) return out;
+  tbody.querySelectorAll('tr').forEach(function(tr){
+    var inputs = tr.querySelectorAll('input[type="number"]');
+    if (IS_BODYWEIGHT[exId]) out.push({ weight:'', reps: inputs[0] ? inputs[0].value : '' });
+    else out.push({ weight: inputs[0] ? inputs[0].value : '', reps: inputs[1] ? inputs[1].value : '' });
+  });
+  return out;
+}
+
+// "+ Add Set" repeats the previous set's weight and reps — usually what you want
 function addSet(exId) {
   var tbody = document.getElementById('tbody-' + exId);
   if (!tbody) return;
-  var num = tbody.querySelectorAll('tr').length + 1;
-  appendSetRow(exId, num, null, null);
-  autoDraft();
+  var cur  = readSets(exId);
+  var num  = cur.length + 1;
+  var last = cur[cur.length - 1] || {};
+  var targets = getPlanTargets(exId) || [];
+  var prev = getPreviousSets(exId);
+  appendSetRow(exId, num, last.weight || null, last.reps || null,
+               prev[num-1] ? prev[num-1].weight : undefined, targets[num-1]);
+  onUserEdit();
 }
 
 function removeSet(btn) {
@@ -996,62 +1229,95 @@ function removeSet(btn) {
   tbody.querySelectorAll('tr').forEach(function(r,i){
     r.querySelector('.set-num').textContent = i + 1;
   });
-  autoDraft();
+  onUserEdit();
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// WEIGHT SOURCE (last session / chosen session)
+// WEIGHT SOURCE — this week's plan, last session, or a chosen session
 // ═══════════════════════════════════════════════════════════════════════
+function currentDate() {
+  var el = document.getElementById('sessionDate');
+  return (el && el.value) ? el.value : today();
+}
+
 function buildWeightSourceDropdown() {
   var sel = document.getElementById('weightSourceSelect');
-  var sessions = getSessions();
-  // keep first option
-  while (sel.options.length > 1) sel.remove(1);
-  sessions.slice(0,20).forEach(function(s){
+  var keep = sel.value;
+  while (sel.options.length > 2) sel.remove(2);   // keep "plan" + "last"
+  getSessions().map(function(s){ return s.date; }).sort().reverse().slice(0, 20).forEach(function(d){
     var opt = document.createElement('option');
-    opt.value = s.date; opt.textContent = s.date;
+    opt.value = d; opt.textContent = 'Workout of ' + fmtShort(parseYMD(d));
     sel.appendChild(opt);
   });
+  sel.value = keep;
+  if (sel.value !== keep) sel.value = 'plan';
 }
 
-function getWeightSource() {
+function getWeightSourceMode() {
   var sel = document.getElementById('weightSourceSelect');
-  var val = sel ? sel.value : 'last';
-  if (val === 'last') {
-    var sessions = getSessions();
-    return sessions.length > 0 ? sessions[0] : null;
+  return sel && sel.value ? sel.value : 'plan';
+}
+
+// Most recent saved session before dateStr (skips the session being edited)
+function getPreviousSession(dateStr) {
+  var best = null;
+  getSessions().forEach(function(s){
+    if (s.date < dateStr && (!best || s.date > best.date)) best = s;
+  });
+  return best;
+}
+
+function getPreviousSets(exId) {
+  var src = getPreviousSession(currentDate());
+  var sets = (src && src.exercises && src.exercises[exId] && src.exercises[exId].sets) || [];
+  return sets.filter(function(x){ return x.weight || x.reps; });
+}
+function getLastWeightsForEx(exId) { return getPreviousSets(exId); }
+
+// Sets to start a fresh workout with, for one exercise
+function getFillSets(exId) {
+  if (IS_BODYWEIGHT[exId]) return [{ weight:'', reps: STS_DEFAULT_REPS }];
+  var date    = currentDate();
+  var mode    = getWeightSourceMode();
+  var targets = getPlanTargets(exId);
+  var planW   = (mode === 'plan') ? getPlanWeights(exId, date) : null;
+  var src     = (mode === 'plan' || mode === 'last') ? getPreviousSession(date)
+              : getSessions().find(function(s){ return s.date === mode; });
+  var srcSets = ((src && src.exercises && src.exercises[exId] && src.exercises[exId].sets) || [])
+                  .filter(function(x){ return x.weight || x.reps; });
+  var m = getMachineById(exId);
+  var count = planW ? planW.length
+            : targets ? targets.length
+            : (m ? (parseInt(m.defaultSets, 10) || DEFAULT_SETS) : DEFAULT_SETS);
+  var out = [];
+  for (var i = 0; i < count; i++) {
+    var lastSrc = srcSets[i] || srcSets[srcSets.length - 1];
+    var w = planW ? planW[i] : (lastSrc ? lastSrc.weight : null);
+    var r = (targets && targets[i]) ? repLow(targets[i]) : (lastSrc ? lastSrc.reps : null);
+    out.push({ weight: (w === undefined ? null : w), reps: r });
   }
-  return getSessions().find(function(s){ return s.date === val; }) || null;
+  return out;
 }
 
-// Return {exId: [{weight, reps}, ...]} for each exercise from source session
-function getLastWeightsForEx(exId) {
-  var src = getWeightSource();
-  if (!src || !src.exercises || !src.exercises[exId]) return [];
-  return src.exercises[exId].sets || [];
-}
-
+// Re-fill the weights on screen from the chosen source (reps you typed are kept)
 function applyWeightSource() {
-  // Re-seed all exercise set rows from new source
   allExerciseIds().forEach(function(exId){
     if (IS_BODYWEIGHT[exId]) return;
     var tbody = document.getElementById('tbody-' + exId);
     if (!tbody) return;
-    var lastSets = getLastWeightsForEx(exId);
-    var count = tbody.querySelectorAll('tr').length;
-    // Re-render rows keeping reps from current, updating weights
-    var current = [];
-    tbody.querySelectorAll('tr').forEach(function(tr){
-      var inputs = tr.querySelectorAll('input[type="number"]');
-      current.push({ weight: inputs[0] ? inputs[0].value : '', reps: inputs[1] ? inputs[1].value : '' });
-    });
+    var cur  = readSets(exId);
+    var fill = getFillSets(exId);
+    var prev = getPreviousSets(exId);
+    var targets = getPlanTargets(exId) || [];
+    var n = cur.length || fill.length;
     tbody.innerHTML = '';
-    for (var i = 0; i < count; i++) {
-      var srcW = lastSets[i] ? lastSets[i].weight : '';
-      var curR = current[i] ? current[i].reps : '';
-      appendSetRow(exId, i+1, srcW, curR || null, lastSets[i] ? lastSets[i].weight : undefined);
+    for (var i = 0; i < n; i++) {
+      var f = fill[i] || fill[fill.length - 1] || {};
+      var r = (cur[i] && cur[i].reps) ? cur[i].reps : f.reps;
+      appendSetRow(exId, i+1, f.weight, r, prev[i] ? prev[i].weight : undefined, targets[i]);
     }
   });
+  updatePlanUI();
   autoDraft();
 }
 
@@ -1068,23 +1334,11 @@ function collectSession() {
   };
   var exercises = {};
   allExerciseIds().forEach(function(exId){
-    var tbody  = document.getElementById('tbody-' + exId);
     var noteEl = document.getElementById('notes-' + exId);
-    var sets = [];
-    if (tbody) {
-      tbody.querySelectorAll('tr').forEach(function(tr){
-        var inputs = tr.querySelectorAll('input[type="number"]');
-        if (IS_BODYWEIGHT[exId]) {
-          sets.push({ weight:'', reps: inputs[0] ? inputs[0].value : '' });
-        } else {
-          sets.push({ weight: inputs[0] ? inputs[0].value : '', reps: inputs[1] ? inputs[1].value : '' });
-        }
-      });
-    }
-    exercises[exId] = { sets:sets, notes: noteEl ? noteEl.value : '' };
+    exercises[exId] = { sets: readSets(exId), notes: noteEl ? noteEl.value : '' };
   });
   var checks = {};
-  ['slb','tandem','side-stepper','grapevine','cooldown-lap','cross-arm','figure4','hamstring','touch-toes'].forEach(function(id){
+  CHECK_IDS.forEach(function(id){
     var el = document.getElementById('chk-' + id);
     checks[id] = el ? el.checked : false;
   });
@@ -1105,6 +1359,10 @@ function setDirty(dirty) {
     unsavedBadge.style.display = 'none';
   }
 }
+
+// True once you type into a set row (so a date change won't silently overwrite it)
+var userTouched = false;
+function onUserEdit() { userTouched = true; autoDraft(); }
 
 function autoDraft() {
   try {
@@ -1138,24 +1396,16 @@ function duplicateLastSession() {
 }
 
 function seedSetsForEx(exId, sourceData) {
-  // sourceData = array of {weight, reps} from saved session or null
+  // sourceData = saved sets [{weight, reps}] to show, or null for a fresh workout
   var tbody = document.getElementById('tbody-' + exId);
   if (!tbody) return;
   tbody.innerHTML = '';
-  var lastSets = getLastWeightsForEx(exId); // for hint display
-
-  if (sourceData && sourceData.length > 0) {
-    sourceData.forEach(function(s, i){
-      appendSetRow(exId, i+1, s.weight, s.reps, lastSets[i] ? lastSets[i].weight : undefined);
-    });
-  } else {
-    var seedCount = IS_BODYWEIGHT[exId] ? 1
-                  : (getMachineById(exId) ? getMachineById(exId).defaultSets : DEFAULT_SETS);
-    var srcW = function(i){ return lastSets[i] ? lastSets[i].weight : null; };
-    for (var s = 0; s < seedCount; s++) {
-      appendSetRow(exId, s+1, srcW(s), null, lastSets[s] ? lastSets[s].weight : undefined);
-    }
-  }
+  var prev = getPreviousSets(exId);
+  var targets = getPlanTargets(exId) || [];
+  var rows = (sourceData && sourceData.length) ? sourceData : getFillSets(exId);
+  rows.forEach(function(st, i){
+    appendSetRow(exId, i+1, st.weight, st.reps, prev[i] ? prev[i].weight : undefined, targets[i]);
+  });
 }
 
 function populateFromData(data) {
@@ -1174,9 +1424,11 @@ function populateFromData(data) {
     if (noteEl) noteEl.value = (ex && ex.notes) ? ex.notes : '';
   });
   var chks = (data && data.checks) || {};
-  ['slb','tandem','side-stepper','grapevine','cooldown-lap','cross-arm','figure4','hamstring','touch-toes'].forEach(function(id){
+  CHECK_IDS.forEach(function(id){
     var el = document.getElementById('chk-' + id); if (el) el.checked = chks[id] || false;
   });
+  userTouched = false;
+  updatePlanUI();
 }
 
 function saveSession() {
@@ -1213,9 +1465,11 @@ function clearSession() {
     seedSetsForEx(exId, null);
     if(noteEl) noteEl.value='';
   });
-  ['slb','tandem','side-stepper','grapevine','cooldown-lap','cross-arm','figure4','hamstring','touch-toes'].forEach(function(id){
+  CHECK_IDS.forEach(function(id){
     var el = document.getElementById('chk-'+id); if(el) el.checked=false;
   });
+  userTouched = false;
+  updatePlanUI();
 }
 
 function loadSessionData(s) {
@@ -1236,25 +1490,15 @@ function deleteSession(date, e) {
 // STATS
 // ═══════════════════════════════════════════════════════════════════════
 function updateStats() {
-  var todayStr = today();
+  var dateStr  = currentDate();
   var sessions = getSessions();
-  // Show/hide "saved" badge for today's date
   var savedBadge = document.getElementById('sessionSavedBadge');
   if (savedBadge && !isDirty) {
-    var savedToday = sessions.some(function(s){ return s.date === todayStr; });
-    savedBadge.style.display = savedToday ? 'inline' : 'none';
+    var isSaved = sessions.some(function(s){ return s.date === dateStr; });
+    savedBadge.style.display = isSaved ? 'inline' : 'none';
   }
   document.getElementById('statSessions').textContent = sessions.length;
-  var streak = 0;
   var sorted = sessions.map(function(s){ return s.date; }).sort().reverse();
-  var checkDate = new Date(); checkDate.setHours(12,0,0,0);
-  for (var i=0; i<sorted.length; i++) {
-    var cs = checkDate.toISOString().split('T')[0];
-    if (sorted[i] === cs) { streak++; checkDate.setDate(checkDate.getDate()-1); }
-    else if (sorted[i] < cs) break;
-  }
-  document.getElementById('statStreak').textContent = streak;
-  // Last workout date
   var lastEl = document.getElementById('statLastDate');
   if (lastEl) {
     if (sorted.length > 0) {
@@ -1267,11 +1511,106 @@ function updateStats() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// WEEKLY PLAN CARD + per-exercise "this week" lines
+// ═══════════════════════════════════════════════════════════════════════
+var shownPlanWeekStart = null;
+
+function updatePlanUI() {
+  var card = document.getElementById('planCard');
+  if (!card) return;
+  var date = currentDate();
+  var plan = getRoadmap();
+  var wk   = getPlanWeek(date);
+  var weekEl  = document.getElementById('planWeek');
+  var phaseEl = document.getElementById('planPhase');
+  var datesEl = document.getElementById('planDates');
+  var noteEl  = document.getElementById('planNote');
+  var statEl  = document.getElementById('statPlanWeek');
+  var statLbl = document.getElementById('statPlanWeekLabel');
+
+  if (wk) {
+    var st = parseYMD(wk.start), en = parseYMD(wk.start); en.setDate(en.getDate() + 6);
+    weekEl.textContent = 'Week ' + wk.week;
+    phaseEl.hidden = false;
+    phaseEl.textContent = wk.phase.charAt(0) + wk.phase.slice(1).toLowerCase();
+    card.setAttribute('data-phase', wk.phase);
+    datesEl.textContent = fmtShort(st) + ' – ' + fmtShort(en);
+    var note = wk.note || '';
+    if (!wk.w) note += (note ? ' ' : '') + 'No strength weights are planned this week, so sets are filled from your last workout.';
+    noteEl.textContent = note;
+    if (statEl) statEl.textContent = wk.week;
+    if (statLbl) statLbl.textContent = 'Week of ' + plan.weeks.length;
+  } else {
+    var first = plan.weeks[0], last = plan.weeks[plan.weeks.length - 1];
+    var before = date < first.start;
+    weekEl.textContent = before ? 'Roadmap not started' : 'Roadmap complete';
+    phaseEl.hidden = true;
+    card.setAttribute('data-phase', 'NONE');
+    datesEl.textContent = before ? 'Starts ' + fmtShort(parseYMD(first.start))
+                                 : 'Last week began ' + fmtShort(parseYMD(last.start));
+    noteEl.textContent = 'Sets are filled from your last workout. To plan ahead, load an updated roadmap from Data.';
+    if (statEl) statEl.textContent = '—';
+    if (statLbl) statLbl.textContent = 'Plan week';
+  }
+  shownPlanWeekStart = wk ? wk.start : null;
+
+  var sl = document.getElementById('stickyDateLabel');
+  if (sl) sl.textContent = parseYMD(date).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+
+  getStrengthOrder().forEach(updateCardInstruction);
+}
+
+function fmtTarget(t) { return String(t || '').replace('-', '–'); }
+
+function updateCardInstruction(exId) {
+  var el = document.getElementById('instr-' + exId);
+  if (!el) return;
+  var targets = getPlanTargets(exId);
+  var w = getPlanWeights(exId, currentDate());
+  el.classList.remove('off-plan');
+  if (targets && w) {
+    var same = w.every(function(v){ return v === w[0]; }) && targets.every(function(t){ return t === targets[0]; });
+    if (same) {
+      el.textContent = 'This week: ' + w.length + ' sets of ' + w[0] + ' lb × ' + fmtTarget(targets[0]);
+    } else {
+      el.textContent = 'This week: ' + w.map(function(v, i){
+        return (v === null ? '?' : v) + ' lb × ' + fmtTarget(targets[i]);
+      }).join(', then ');
+    }
+  } else if (targets) {
+    el.textContent = 'Nothing planned this week. Rep targets: ' + targets.map(fmtTarget).join(' and ');
+    el.classList.add('off-plan');
+  } else {
+    var m = getMachineById(exId);
+    el.textContent = (m ? m.defaultSets : DEFAULT_SETS) + ' sets × ' + (m ? m.defaultReps : DEFAULT_REPS) +
+                     ' reps @ ' + (m ? m.defaultWeight : 30) + ' lb (not in your roadmap)';
+    el.classList.add('off-plan');
+  }
+}
+
+function onSessionDateChange() {
+  var date  = currentDate();
+  var saved = getSessions().find(function(s){ return s.date === date; });
+  if (saved && confirm('A workout is already saved for ' + fmtShort(parseYMD(date)) + '. Open it?')) {
+    populateFromData(saved);
+    clearDraft(); setDirty(false);
+    updateStats();
+    return;
+  }
+  var wk = getPlanWeek(date);
+  var weekChanged = (wk ? wk.start : null) !== shownPlanWeekStart;
+  if (weekChanged && getWeightSourceMode() === 'plan') {
+    var ask = 'Change the weights to the plan for ' + (wk ? 'week ' + wk.week : 'this date') + '?\n\nCancel keeps the weights you entered.';
+    if (!userTouched || confirm(ask)) applyWeightSource();
+  }
+  updatePlanUI();
+  updateStats();
+  autoDraft();
+}
+
 function toggleAllStrength(open) {
-  var ids = ['chest-press','row','leg-curl','leg-press','leg-ext'];
-  // Also include custom machines
-  getMachines().forEach(function(m){ ids.push(m.id); });
-  ids.forEach(function(id){
+  getStrengthOrder().forEach(function(id){
     var card = document.getElementById('card-' + id);
     if (!card) return;
     if (open) card.classList.add('open');
@@ -1294,7 +1633,7 @@ function toggleChartSection() {
 
 // Default order = the DOM order of built-ins + custom machines in creation order
 function getDefaultStrengthOrder() {
-  var ids = ['chest-press','row','leg-curl','leg-press','leg-ext'];
+  var ids = STRENGTH_BUILTINS.slice();
   getMachines().forEach(function(m){ ids.push(m.id); });
   return ids;
 }
@@ -1347,6 +1686,9 @@ function applyStrengthOrder() {
     // STS tab goes last
     var stsTab = chartTabs.querySelector('[data-ex="sts"]');
     if (stsTab) chartTabs.appendChild(stsTab);
+    if (!chartTabs.querySelector('.chart-tab.active') && chartTabs.firstChild) {
+      chartTabs.firstChild.classList.add('active');
+    }
   }
 }
 
@@ -1688,7 +2030,7 @@ function renderChart() {
 function exportCSV() {
   var sessions = getSessions();
   if (!sessions.length) { alert('No sessions saved yet!'); return; }
-  var rows = [['Date','Exercise','Set #','Weight (lbs)','Reps','Volume']];
+  var rows = [['Date','Exercise','Set #','Weight (lbs)','Reps','Volume','Notes']];
   sessions.slice().sort(function(a,b){ return a.date.localeCompare(b.date); }).forEach(function(s){
     allExerciseIds().forEach(function(exId){
       var ex = s.exercises && s.exercises[exId];
@@ -1699,7 +2041,7 @@ function exportCSV() {
         var w   = IS_BODYWEIGHT[exId] ? 'BW' : (parseFloat(set.weight)||'');
         var r   = parseInt(set.reps)||'';
         var vol = (!IS_BODYWEIGHT[exId] && w && r) ? w*r : '';
-        rows.push([s.date, label, i+1, w, r, vol, i===0?'"'+notes+'"':'']);
+        rows.push([s.date, '"' + label.replace(/"/g,'""') + '"', i+1, w, r, vol, i===0?'"'+notes+'"':'']);
       });
     });
   });
@@ -1945,7 +2287,9 @@ function exportJSON() {
     exportedAt: new Date().toISOString(),
     sessions: getSessions(),
     machines: getMachines(),
-    builtinSettings: getBuiltinSettings()
+    builtinSettings: getBuiltinSettings(),
+    strengthOrder: getStrengthOrder(),
+    roadmap: (function(){ try { return JSON.parse(localStorage.getItem(ROADMAP_KEY) || 'null'); } catch(e) { return null; } })()
   };
   triggerDownload(JSON.stringify(payload, null, 2), 'application/json', 'scottfit_backup_'+today()+'.json');
   showToast('✓ JSON backup downloaded!');
@@ -1978,10 +2322,15 @@ function importJSON() {
   setSessions(payload.sessions);
   if (payload.machines && Array.isArray(payload.machines)) setMachines(payload.machines);
   if (payload.builtinSettings && typeof payload.builtinSettings === 'object') setBuiltinSettings(payload.builtinSettings);
+  try {
+    if (Array.isArray(payload.strengthOrder)) localStorage.setItem(STRENGTH_ORDER_KEY, JSON.stringify(payload.strengthOrder));
+    if (payload.roadmap && payload.roadmap.weeks) localStorage.setItem(ROADMAP_KEY, JSON.stringify(payload.roadmap));
+  } catch(e) {}
+  migrateLegacyMachines();
   clearDraft();
   closeDataModal();
   renderCustomMachineCards();
-  ['chest-press','row','leg-curl','leg-press','leg-ext'].forEach(function(exId){ refreshBuiltinCardMeta(exId); });
+  STRENGTH_BUILTINS.forEach(function(exId){ refreshCardMeta(exId); });
   buildWeightSourceDropdown();
   populateFromData(null);
   updateStats(); renderHistory(); renderChart();
@@ -1997,7 +2346,99 @@ function triggerDownload(content, type, filename) {
   document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
-function today() { return new Date().toISOString().split('T')[0]; }
+function localYMD(d) {
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+function today() { return localYMD(new Date()); }
+
+// ═══════════════════════════════════════════════════════════════════════
+// ROADMAP FILE — load an updated roadmap spreadsheet (.xlsx)
+// ═══════════════════════════════════════════════════════════════════════
+var SHEETJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+
+function ensureSheetJS(cb) {
+  if (window.XLSX) { cb(null); return; }
+  var tag = document.createElement('script');
+  tag.src = SHEETJS_URL;
+  tag.onload  = function(){ cb(window.XLSX ? null : new Error('not loaded')); };
+  tag.onerror = function(){ cb(new Error('network')); };
+  document.head.appendChild(tag);
+}
+
+function renderRoadmapStatus() {
+  var el = document.getElementById('roadmapStatus');
+  var btn = document.getElementById('roadmapRevertBtn');
+  if (!el) return;
+  var plan = getRoadmap();
+  var custom = (plan !== BUILTIN_ROADMAP);
+  var first = parseYMD(plan.weeks[0].start), last = parseYMD(plan.weeks[plan.weeks.length - 1].start);
+  last.setDate(last.getDate() + 6);
+  var span = plan.weeks.length + ' weeks, ' +
+             first.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) + ' to ' +
+             last.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  el.textContent = custom
+    ? 'Using ' + (plan.source || 'a loaded roadmap') + ' (' + span + ').'
+    : 'Using the built-in roadmap, ' + BUILTIN_ROADMAP_NAME + ' (' + span + ').';
+  if (btn) btn.style.display = custom ? '' : 'none';
+}
+
+function afterRoadmapChange() {
+  renderRoadmapStatus();
+  if (!userTouched || confirm('Refill today\'s weights from the new roadmap?\n\nCancel keeps the weights you entered.')) {
+    applyWeightSource();
+  } else {
+    updatePlanUI();
+  }
+}
+
+function loadRoadmapFile(event) {
+  var input = event.target;
+  var file = input.files[0];
+  var errEl = document.getElementById('roadmapError');
+  errEl.textContent = '';
+  if (!file) return;
+  input.value = '';   // lets you pick the same file again later
+  ensureSheetJS(function(err){
+    if (err) {
+      errEl.textContent = 'The spreadsheet reader could not load. Connect to the internet and try again.';
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e){
+      try {
+        var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        var name = wb.SheetNames.filter(function(n){ return /weekly/i.test(n); })[0]
+                || wb.SheetNames.filter(function(n){ return /roadmap/i.test(n); })[0]
+                || wb.SheetNames[0];
+        var rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: '' });
+        var plan = parseRoadmapRows(rows);
+        plan.source = file.name;
+        plan.loadedAt = new Date().toISOString();
+        var unmatched = plan.lifts.filter(function(l){ return !liftToExId(l.name); })
+                                  .map(function(l){ return l.name; });
+        var msg = 'Use "' + file.name + '"?\n\n' + plan.weeks.length + ' weeks and ' + plan.lifts.length +
+                  ' lifts found on the "' + name + '" sheet.';
+        if (unmatched.length) msg += '\n\nNo machine matches: ' + unmatched.join(', ') +
+                  '. Add a machine with that exact name to use it.';
+        if (!confirm(msg)) return;
+        localStorage.setItem(ROADMAP_KEY, JSON.stringify(plan));
+        afterRoadmapChange();
+        showToast('✓ Roadmap loaded');
+      } catch(ex) {
+        errEl.textContent = 'Could not read that roadmap: ' + ex.message;
+      }
+    };
+    reader.onerror = function(){ errEl.textContent = 'Could not open that file.'; };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function revertRoadmap() {
+  if (!confirm('Go back to the built-in roadmap (' + BUILTIN_ROADMAP_NAME + ')?')) return;
+  try { localStorage.removeItem(ROADMAP_KEY); } catch(e) {}
+  afterRoadmapChange();
+  showToast('✓ Using the built-in roadmap');
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // SETTINGS MODAL — Machine Manager
@@ -2014,16 +2455,16 @@ function closeSettingsModal() {
   // Rebuild custom machine cards
   renderCustomMachineCards();
   // Refresh all builtin card headers and pills from storage
-  // Runs AFTER renderCustomMachineCards so DOM is stable
-  ['chest-press','row','leg-curl','leg-press','leg-ext'].forEach(function(exId){
-    refreshBuiltinCardMeta(exId);
-  });
+  STRENGTH_BUILTINS.forEach(function(exId){ refreshCardMeta(exId); });
+  updatePlanUI();
   // NOT calling populateFromData here - it was overwriting the
   // freshly saved pill values by restoring the pre-edit draft state.
 }
 function openDataModal() {
   document.getElementById('importText').value = '';
   document.getElementById('importError').textContent = '';
+  document.getElementById('roadmapError').textContent = '';
+  renderRoadmapStatus();
   document.getElementById('dataModal').classList.remove('hidden');
 }
 function closeDataModal() { document.getElementById('dataModal').classList.add('hidden'); }
@@ -2038,7 +2479,7 @@ function renderMachineList() {
   builtinHeader.textContent = 'Built-in Machines';
   list.appendChild(builtinHeader);
 
-  ['chest-press','row','leg-curl','leg-press','leg-ext'].forEach(function(exId){
+  STRENGTH_BUILTINS.forEach(function(exId){
     var m = getMachineById(exId);
     list.appendChild(buildMachineRow(m, false));
   });
@@ -2074,6 +2515,7 @@ function buildMachineRow(m, isCustom) {
   nameSpan.style.cssText = 'flex:1;font-size:.85rem;font-weight:500;';
   nameSpan.textContent = m.name;
   var editBtn = document.createElement('button');
+  editBtn.type = 'button';
   editBtn.className = 'btn btn-ghost btn-sm'; editBtn.textContent = 'Edit';
   editBtn.addEventListener('click', function(){
     if (isCustom) openEditMachineForm(m.id);
@@ -2082,9 +2524,11 @@ function buildMachineRow(m, isCustom) {
   topLine.appendChild(nameSpan); topLine.appendChild(editBtn);
   if (isCustom) {
     var delBtn = document.createElement('button');
+    delBtn.type = 'button';
     delBtn.className = 'btn btn-danger'; delBtn.textContent = '✕';
+    delBtn.setAttribute('aria-label', 'Delete ' + m.name);
     delBtn.addEventListener('click', function(){
-      if (!confirm('Delete "' + m.name + '"?')) return;
+      if (!confirm('Delete "' + m.name + '"?\n\nSaved workouts keep their data.')) return;
       setMachines(getMachines().filter(function(x){ return x.id !== m.id; }));
       renderMachineList();
     });
@@ -2120,7 +2564,7 @@ function openAddMachineForm() {
   nameEl.value    = '';
   nameEl.disabled = false;
   document.getElementById('machineFormTitle').textContent = 'New Machine';
-  document.getElementById('mf-sets').value   = '3';
+  document.getElementById('mf-sets').value   = '2';
   document.getElementById('mf-reps').value   = '15';
   document.getElementById('mf-weight').value = '30';
   document.getElementById('settingsRows').innerHTML = '';
@@ -2139,7 +2583,7 @@ function openEditMachineForm(id) {
   editingBuiltin = false;
   document.getElementById('machineFormTitle').textContent = 'Edit Machine';
   document.getElementById('mf-name').value   = m.name;
-  document.getElementById('mf-sets').value   = m.defaultSets || '3';
+  document.getElementById('mf-sets').value   = m.defaultSets || '2';
   document.getElementById('mf-reps').value   = m.defaultReps || '15';
   document.getElementById('mf-weight').value = m.defaultWeight || '30';
   document.getElementById('mf-name').disabled = false;
@@ -2220,7 +2664,7 @@ function saveMachineForm() {
 
   // Custom machine — validate name
   var name   = (document.getElementById('mf-name').value || '').trim();
-  var sets   = parseInt(document.getElementById('mf-sets').value,   10) || 3;
+  var sets   = parseInt(document.getElementById('mf-sets').value,   10) || 2;
   var reps   = parseInt(document.getElementById('mf-reps').value,   10) || 15;
   var weight = parseFloat(document.getElementById('mf-weight').value)   || 30;
 
@@ -2287,29 +2731,30 @@ function settingsToMeta(settings) {
   }).join('  |  ');
 }
 
-function refreshBuiltinCardMeta(exId) {
-  var settings = getSettingsForBuiltin(exId);
+function refreshCardMeta(exId) {
+  var custom   = getMachines().find(function(m){ return m.id === exId; });
+  var settings = custom ? (custom.settings || []) : getSettingsForBuiltin(exId);
   var metaEl = document.querySelector('#card-' + exId + ' .exercise-meta');
-  // Only overwrite meta text if there are settings to show
-  // (avoids blanking out machines with no configured settings)
-  if (metaEl && settings.length > 0) {
-    metaEl.textContent = settingsToMeta(settings);
-  }
-  // Refresh inline pills if visible in body
+  if (metaEl) metaEl.textContent = settingsToMeta(settings);
   var pillsEl = document.querySelector('#card-' + exId + ' .machine-settings');
   if (pillsEl) {
     pillsEl.innerHTML = '';
     settings.forEach(function(s){
       var pill = document.createElement('span'); pill.className = 'setting-pill';
-      pill.innerHTML = '<span class="pill-label">' + s.type + ':</span> <span class="pill-val" data-ex="' + exId + '" data-type="' + s.type + '" title="Tap to edit" style="cursor:pointer;text-decoration:underline dotted">' + s.value + '</span>';
-      pill.querySelector('.pill-val').addEventListener('click', function(e){
+      var lab = document.createElement('span'); lab.className = 'pill-label'; lab.textContent = s.type + ':';
+      var val = document.createElement('span'); val.className = 'pill-val';
+      val.textContent = ' ' + s.value; val.title = 'Tap to edit';
+      val.style.cssText = 'cursor:pointer;text-decoration:underline dotted;';
+      val.addEventListener('click', function(e){
         e.stopPropagation();
-        openInlineSettingEdit(exId, s.type, false);
+        openInlineSettingEdit(exId, s.type, !!custom);
       });
+      pill.appendChild(lab); pill.appendChild(val);
       pillsEl.appendChild(pill);
     });
   }
 }
+function refreshBuiltinCardMeta(exId) { refreshCardMeta(exId); }
 
 // Quick-edit a single setting value inline (pill tap or from modal)
 function openInlineSettingEdit(exId, settingType, isCustom) {
@@ -2329,7 +2774,7 @@ function openInlineSettingEdit(exId, settingType, isCustom) {
     if (settingIdx >= 0) machines[idx].settings[settingIdx].value = newVal;
     else { if (!machines[idx].settings) machines[idx].settings=[]; machines[idx].settings.push({type:settingType,value:newVal}); }
     setMachines(machines);
-    renderCustomMachineCards();
+    refreshCardMeta(exId);
   } else {
     var settings = getSettingsForBuiltin(exId);
     var si = settings.findIndex(function(s){ return s.type === settingType; });
@@ -2344,90 +2789,102 @@ function openInlineSettingEdit(exId, settingType, isCustom) {
 // ═══════════════════════════════════════════════════════════════════════
 // RENDER CUSTOM MACHINE CARDS (dynamic DOM)
 // ═══════════════════════════════════════════════════════════════════════
-function renderCustomMachineCards() {
-  var container = document.getElementById('customMachineCards');
-  container.innerHTML = '';
+function buildStrengthCard(id, name, isCustom) {
+  var card = document.createElement('div');
+  card.className = 'exercise-card'; card.id = 'card-' + id;
+  if (isCustom) card.setAttribute('data-custom', '1');
 
-  // Remove old chart tabs for custom machines, keep builtins
+  var header = document.createElement('div');
+  header.className = 'exercise-header';
+  header.addEventListener('click', function(){ toggleCard(id); });
+  var nameSpan = document.createElement('span'); nameSpan.className = 'exercise-name'; nameSpan.textContent = name;
+  var metaSpan = document.createElement('span'); metaSpan.className = 'exercise-meta';
+  var chev = document.createElement('span'); chev.className = 'chevron'; chev.innerHTML = '&#9660;';
+  header.appendChild(nameSpan); header.appendChild(metaSpan); header.appendChild(chev);
+
+  var body = document.createElement('div'); body.className = 'exercise-body';
+  var pills = document.createElement('div'); pills.className = 'machine-settings';
+  body.appendChild(pills);
+  var instr = document.createElement('div');
+  instr.className = 'exercise-instruction plan-line'; instr.id = 'instr-' + id;
+  body.appendChild(instr);
+
+  var table = document.createElement('table'); table.className = 'sets-table';
+  table.innerHTML = '<thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead>';
+  var tbody = document.createElement('tbody'); tbody.id = 'tbody-' + id;
+  table.appendChild(tbody); body.appendChild(table);
+
+  var addBtn = document.createElement('button');
+  addBtn.type = 'button'; addBtn.className = 'add-set-btn'; addBtn.textContent = '+ Add Set';
+  addBtn.addEventListener('click', function(){ addSet(id); });
+  body.appendChild(addBtn);
+
+  var notesDiv = document.createElement('div'); notesDiv.className = 'notes-area';
+  var notesTA  = document.createElement('textarea');
+  notesTA.id = 'notes-' + id; notesTA.placeholder = 'Notes...';
+  notesTA.addEventListener('input', autoDraft);
+  notesDiv.appendChild(notesTA); body.appendChild(notesDiv);
+
+  card.appendChild(header); card.appendChild(body);
+  return card;
+}
+
+function makeChartTab(id, label, isCustom) {
+  var tab = document.createElement('button');
+  tab.type = 'button'; tab.className = 'chart-tab'; tab.dataset.ex = id;
+  if (isCustom) tab.dataset.custom = '1';
+  tab.textContent = label;
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('.chart-tab').forEach(function(b){ b.classList.remove('active'); });
+    tab.classList.add('active'); renderChart();
+  });
+  return tab;
+}
+
+function renderBuiltinStrengthCards() {
+  var host = document.getElementById('strengthCards');
+  STRENGTH_BUILTINS.forEach(function(id){
+    if (document.getElementById('card-' + id)) return;
+    host.appendChild(buildStrengthCard(id, EX_LABELS[id], false));
+    refreshCardMeta(id);
+  });
+  var tabs = document.getElementById('chartTabs');
+  tabs.querySelectorAll('.chart-tab:not([data-custom])').forEach(function(t){ t.remove(); });
+  STRENGTH_BUILTINS.concat(['sts']).forEach(function(id){
+    tabs.appendChild(makeChartTab(id, CHART_LABELS[id] || id, false));
+  });
+}
+
+function renderCustomMachineCards() {
+  var host = document.getElementById('strengthCards');
+  // Keep whatever has been entered in custom cards while they are rebuilt
+  var kept = {};
+  host.querySelectorAll('.exercise-card[data-custom]').forEach(function(c){
+    var id = c.id.replace(/^card-/, '');
+    var notes = document.getElementById('notes-' + id);
+    kept[id] = { sets: readSets(id), notes: notes ? notes.value : '', open: c.classList.contains('open') };
+    c.remove();
+  });
   var chartTabsEl = document.getElementById('chartTabs');
   chartTabsEl.querySelectorAll('[data-custom]').forEach(function(b){ b.remove(); });
 
   getMachines().forEach(function(m){
-    var card = document.createElement('div');
-    card.className = 'exercise-card'; card.id = 'card-' + m.id;
-
-    // Meta string from settings
-    var metaStr = (m.settings||[]).map(function(s){
-      return s.type.charAt(0).toUpperCase()+s.type.slice(1)+': '+s.value;
-    }).join(' \u00a0|\u00a0 ');
-
-    var header = document.createElement('div');
-    header.className = 'exercise-header';
-    header.addEventListener('click', function(){ toggleCard(m.id); });
-
-    var nameSpan = document.createElement('span');
-    nameSpan.className = 'exercise-name'; nameSpan.textContent = m.name;
-    var metaSpan = document.createElement('span');
-    metaSpan.className = 'exercise-meta'; metaSpan.textContent = metaStr;
-    var chev = document.createElement('span');
-    chev.className = 'chevron'; chev.innerHTML = '&#9660;';
-
-    header.appendChild(nameSpan); header.appendChild(metaSpan); header.appendChild(chev);
-
-    var body = document.createElement('div'); body.className = 'exercise-body';
-
-    // Settings pills
-    if (m.settings && m.settings.length) {
-      var pillsDiv = document.createElement('div'); pillsDiv.className = 'machine-settings';
-      m.settings.forEach(function(s){
-        var pill = document.createElement('span'); pill.className = 'setting-pill';
-        pill.innerHTML = '<span class="pill-label">' + s.type + ':</span> ' + s.value;
-        pillsDiv.appendChild(pill);
-      });
-      body.appendChild(pillsDiv);
+    var card = buildStrengthCard(m.id, m.name, true);
+    host.appendChild(card);
+    refreshCardMeta(m.id);
+    var k = kept[m.id];
+    seedSetsForEx(m.id, k ? k.sets : null);
+    if (k) {
+      document.getElementById('notes-' + m.id).value = k.notes;
+      if (k.open) card.classList.add('open');
+    } else {
+      card.classList.add('open');
     }
-
-    var instr = document.createElement('div'); instr.className = 'exercise-instruction';
-    instr.innerHTML = '<span class="dot">&#9679;</span>&nbsp; ' + m.defaultSets + ' sets &times; ' + m.defaultReps + ' reps @ ' + m.defaultWeight + ' lbs &nbsp;&mdash;&nbsp; increase weight as you progress';
-    body.appendChild(instr);
-
-    var table = document.createElement('table'); table.className = 'sets-table';
-    table.innerHTML = '<thead><tr><th>#</th><th>Weight (lbs)</th><th>Reps</th><th></th></tr></thead>';
-    var tbody = document.createElement('tbody'); tbody.id = 'tbody-' + m.id;
-    table.appendChild(tbody); body.appendChild(table);
-
-    var addBtn = document.createElement('button');
-    addBtn.type = 'button';
-    addBtn.className = 'add-set-btn';
-    addBtn.textContent = '+ Add Set';
-    addBtn.addEventListener('click', function(){ addSet(m.id); });
-    body.appendChild(addBtn);
-
-    var notesDiv = document.createElement('div'); notesDiv.className = 'notes-area';
-    var notesTA  = document.createElement('textarea');
-    notesTA.id = 'notes-' + m.id; notesTA.placeholder = 'Notes...';
-    notesTA.addEventListener('input', autoDraft);
-    notesDiv.appendChild(notesTA); body.appendChild(notesDiv);
-
-    card.appendChild(header); card.appendChild(body);
-    container.appendChild(card);
-
-    // Add chart tab
-    var tab = document.createElement('button');
-    tab.type = 'button';
-    tab.className = 'chart-tab'; tab.dataset.ex = m.id; tab.dataset.custom = '1';
-    tab.textContent = m.name.split(' ').slice(0,2).join(' ');
-    tab.addEventListener('click', function(){
-      document.querySelectorAll('.chart-tab').forEach(function(b){ b.classList.remove('active'); });
-      tab.classList.add('active'); renderChart();
-    });
-    chartTabsEl.appendChild(tab);
+    chartTabsEl.appendChild(makeChartTab(m.id, m.name.split(' ').slice(0,2).join(' '), true));
   });
 
-  // Re-apply saved strength order so new/existing custom machines land in
-  // the right position alongside built-ins (safe no-op on initial boot
-  // before applyStrengthOrder exists on first call).
-  if (typeof applyStrengthOrder === 'function') applyStrengthOrder();
+  applyStrengthOrder();
+  getMachines().forEach(function(m){ updateCardInstruction(m.id); });
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2479,19 +2936,9 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('todayLabel').textContent =
     new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 
-  // Wire note textareas for auto-draft (built-ins)
-  BUILTIN_EXERCISES.forEach(function(exId){
-    var el = document.getElementById('notes-' + exId);
-    if (el) el.addEventListener('input', autoDraft);
-  });
+  var stsNotes = document.getElementById('notes-sts');
+  if (stsNotes) stsNotes.addEventListener('input', autoDraft);
 
-  // Chart tab listeners (built-in tabs only; custom added dynamically)
-  document.querySelectorAll('.chart-tab').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('.chart-tab').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active'); renderChart();
-    });
-  });
   document.querySelectorAll('.metric-tab').forEach(function(btn){
     btn.addEventListener('click', function(){
       document.querySelectorAll('.metric-tab').forEach(function(b){ b.classList.remove('active'); });
@@ -2499,42 +2946,29 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   });
 
-  // Render custom machine cards first (so DOM exists for populateFromData)
+  // Custom Shoulder Press / Hip Abduction machines → built-ins (one time, history kept)
+  var migrated = migrateLegacyMachines();
+
+  // Build strength cards (built-ins, then custom) and apply the saved order
+  renderBuiltinStrengthCards();
   renderCustomMachineCards();
-
-  // Inject editable settings pills into built-in exercise cards
-  ['chest-press','row','leg-curl','leg-press','leg-ext'].forEach(function(exId){
-    var body = document.querySelector('#card-' + exId + ' .exercise-body');
-    if (!body) return;
-    // Create pills container before instruction badge
-    var pillsDiv = document.createElement('div');
-    pillsDiv.className = 'machine-settings';
-    var instr = body.querySelector('.exercise-instruction');
-    body.insertBefore(pillsDiv, instr || body.firstChild);
-    // Render initial meta in header too
-    refreshBuiltinCardMeta(exId);
-  });
-
-  // Build weight source dropdown
   buildWeightSourceDropdown();
-
-  // Apply saved strength exercise order (moves DOM nodes into configured order)
-  // Must run AFTER renderCustomMachineCards so custom cards exist in DOM
   applyStrengthOrder();
 
-  // Populate from draft or seed from last session weights
+  // A draft from an earlier day: finish it, or start today's planned workout
   var draft = getDraft();
-  if (draft) {
-    populateFromData(draft);
-  } else {
-    // Seed set rows using last-session weights as defaults
-    populateFromData(null);
+  if (draft && draft.date && draft.date !== today()) {
+    var keepIt = confirm('You have an unsaved workout from ' + fmtShort(parseYMD(draft.date)) + '.\n\n' +
+                         'OK opens it so you can finish and save it.\nCancel discards it and starts today\'s workout.');
+    if (!keepIt) { clearDraft(); draft = null; }
   }
+  populateFromData(draft || null);
 
   updateStats(); renderHistory(); renderChart();
 
   // Set initial dirty state based on whether there's an unsaved draft
   if (draft) setDirty(true);
+  if (migrated) showToast('✓ Shoulder Press and Hip Abduction are now built in. Your history was kept.');
 
   // ── Keyboard shortcuts ──
   document.addEventListener('keydown', function(e) {
@@ -2562,7 +2996,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // Open cardio + all strength cards by default for quick workout entry
   document.getElementById('card-cardio').classList.add('open');
-  ['chest-press','row','leg-curl','leg-press','leg-ext'].forEach(function(id){
+  getStrengthOrder().forEach(function(id){
     var c = document.getElementById('card-' + id);
     if (c) c.classList.add('open');
   });
