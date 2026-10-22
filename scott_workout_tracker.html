@@ -408,6 +408,10 @@ header{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid var(--border);display
   padding:.2rem .3rem;touch-action:none;
 }
 .reorder-handle:active{cursor:grabbing;}
+.reorder-pos{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--muted);width:1.3rem;text-align:right;flex-shrink:0;}
+.reorder-item.just-moved{border-color:var(--accent);background:var(--surface3);transition:background .6s;}
+.touch .reorder-handle{display:none;}
+.order-btn{margin-right:.35rem;}
 .reorder-name{flex:1;font-size:.88rem;}
 .reorder-name .reorder-type{
   font-family:'DM Mono',monospace;font-size:.58rem;
@@ -614,8 +618,7 @@ tr.set-done td{background:rgba(212,240,96,.05);}
     <div class="section-header">
       <div class="section-label">Strength</div>
       <div>
-        <button type="button" class="section-toggle-btn" onclick="openReorderModal()" title="Change exercise order">↕ reorder</button>
-        <span style="color:var(--border)">|</span>
+        <button type="button" class="btn btn-ghost btn-sm order-btn" onclick="openReorderModal()">↕ Change order</button>
         <button type="button" class="section-toggle-btn" onclick="toggleAllStrength(true)">expand all</button>
         <span style="color:var(--border)">|</span>
         <button type="button" class="section-toggle-btn" onclick="toggleAllStrength(false)">collapse all</button>
@@ -709,6 +712,7 @@ tr.set-done td{background:rgba(212,240,96,.05);}
     <p style="font-size:.78rem;color:var(--muted);margin-bottom:1rem;">Edit settings for any machine. Tap a setting pill to change its value. Changes show instantly on the exercise cards.</p>
     <div id="machineList"></div>
     <button type="button" class="btn btn-blue btn-sm" onclick="openAddMachineForm()" style="width:100%;margin-top:.4rem;">+ Add New Machine</button>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="closeSettingsModal(); openReorderModal();" style="width:100%;margin-top:.5rem;">↕ Change machine order</button>
 
     <!-- Add/Edit machine form (hidden until triggered) -->
     <div id="machineForm" style="display:none;">
@@ -829,13 +833,13 @@ tr.set-done td{background:rgba(212,240,96,.05);}
 <!-- ══ REORDER MODAL (Strength exercise order) ════════════════════════ -->
 <div class="modal-overlay hidden" id="reorderModal">
   <div class="modal">
-    <h2>↕ Reorder Strength Exercises</h2>
+    <h2>↕ Machine Order</h2>
     <p style="font-size:.78rem;color:var(--muted);margin-bottom:1rem;line-height:1.5;">
-      Drag the handles to reorder, or use the ▲ ▼ arrows. Group exercises however you like (e.g., upper body first, then lower body). The order saves automatically when you tap Done.
+      <span id="reorderHelp">Use ▲ and ▼ to move a machine one place, or ⤒ to send it to the top.</span> Group them however suits your workout, such as upper body first. Tap Done to keep the new order, or Cancel to leave it as it was.
     </p>
     <ul id="reorderList" class="reorder-list"></ul>
     <div style="margin-top:1rem;">
-      <button type="button" class="btn btn-ghost btn-sm" onclick="resetReorderToDefault()">Reset to default order</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="resetReorderToDefault()">Reset to roadmap order</button>
     </div>
     <div class="divider"></div>
     <div class="modal-actions">
@@ -1946,19 +1950,42 @@ function applyStrengthOrder() {
 }
 
 // ── Reorder modal UI ──
+var reorderWorking = null;   // order being edited in the modal (saved only on Done)
+var reorderLastMoved = null;
+
 function openReorderModal() {
-  document.getElementById('reorderModal').classList.remove('hidden');
+  reorderWorking = getStrengthOrder().slice();
+  reorderLastMoved = null;
+  var isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  var modal = document.getElementById('reorderModal');
+  modal.classList.toggle('touch', isTouch);
+  var help = document.getElementById('reorderHelp');
+  if (help) help.textContent = isTouch
+    ? 'Use ▲ and ▼ to move a machine one place, or ⤒ to send it to the top.'
+    : 'Drag a machine by its ⋮⋮ handle, or use ▲, ▼ and ⤒ (send to top).';
+  modal.classList.remove('hidden');
   renderReorderList();
 }
 
+// Cancel: discard any changes
 function closeReorderModal() {
+  reorderWorking = null;
   document.getElementById('reorderModal').classList.add('hidden');
+}
+
+function makeReorderBtn(label, aria, disabled, onClick) {
+  var b = document.createElement('button');
+  b.type = 'button'; b.className = 'reorder-btn';
+  b.textContent = label; b.title = aria; b.setAttribute('aria-label', aria);
+  b.disabled = disabled;
+  b.addEventListener('click', onClick);
+  return b;
 }
 
 function renderReorderList() {
   var ul = document.getElementById('reorderList');
   ul.innerHTML = '';
-  var order = getStrengthOrder();
+  var order = reorderWorking || getStrengthOrder();
 
   order.forEach(function(id, idx){
     var m = getMachineById(id);
@@ -1966,13 +1993,16 @@ function renderReorderList() {
     var isCustom = !BUILTIN_DEFAULTS[id];
 
     var li = document.createElement('li');
-    li.className = 'reorder-item';
+    li.className = 'reorder-item' + (id === reorderLastMoved ? ' just-moved' : '');
     li.dataset.id = id;
     li.draggable = true;
 
+    var pos = document.createElement('span');
+    pos.className = 'reorder-pos'; pos.textContent = idx + 1;
+
     var handle = document.createElement('span');
     handle.className = 'reorder-handle';
-    handle.innerHTML = '⋮⋮';
+    handle.textContent = '⋮⋮';
     handle.title = 'Drag to reorder';
 
     var nameSpan = document.createElement('span');
@@ -1987,33 +2017,17 @@ function renderReorderList() {
 
     var btns = document.createElement('span');
     btns.className = 'reorder-btns';
+    var last = order.length - 1;
+    btns.appendChild(makeReorderBtn('⤒', 'Move ' + m.name + ' to the top', idx === 0, function(){ moveReorderItem(id, -idx); }));
+    btns.appendChild(makeReorderBtn('▲', 'Move ' + m.name + ' up', idx === 0, function(){ moveReorderItem(id, -1); }));
+    btns.appendChild(makeReorderBtn('▼', 'Move ' + m.name + ' down', idx === last, function(){ moveReorderItem(id, 1); }));
 
-    var upBtn = document.createElement('button');
-    upBtn.type = 'button';
-    upBtn.className = 'reorder-btn';
-    upBtn.textContent = '▲';
-    upBtn.title = 'Move up';
-    upBtn.setAttribute('aria-label', 'Move ' + m.name + ' up');
-    upBtn.disabled = (idx === 0);
-    upBtn.addEventListener('click', function(){ moveReorderItem(id, -1); });
-
-    var downBtn = document.createElement('button');
-    downBtn.type = 'button';
-    downBtn.className = 'reorder-btn';
-    downBtn.textContent = '▼';
-    downBtn.title = 'Move down';
-    downBtn.setAttribute('aria-label', 'Move ' + m.name + ' down');
-    downBtn.disabled = (idx === order.length - 1);
-    downBtn.addEventListener('click', function(){ moveReorderItem(id, 1); });
-
-    btns.appendChild(upBtn);
-    btns.appendChild(downBtn);
-
+    li.appendChild(pos);
     li.appendChild(handle);
     li.appendChild(nameSpan);
     li.appendChild(btns);
 
-    // Drag & drop support (desktop)
+    // Drag & drop (mouse/trackpad)
     li.addEventListener('dragstart', function(e){
       li.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
@@ -2032,53 +2046,53 @@ function renderReorderList() {
     li.addEventListener('drop', function(e){
       e.preventDefault();
       var draggedId = e.dataTransfer.getData('text/plain');
-      if (draggedId && draggedId !== id) {
-        reorderItemBeforeTarget(draggedId, id);
-      }
+      if (draggedId && draggedId !== id) reorderItemBeforeTarget(draggedId, id);
     });
 
     ul.appendChild(li);
   });
+
+  // Keep the machine you just moved on screen (helps on a small phone)
+  var moved = ul.querySelector('.just-moved');
+  if (moved && moved.scrollIntoView) moved.scrollIntoView({ block: 'nearest' });
 }
 
 function moveReorderItem(id, delta) {
-  var order = getStrengthOrder();
+  var order = reorderWorking || (reorderWorking = getStrengthOrder().slice());
   var idx = order.indexOf(id);
   if (idx < 0) return;
-  var newIdx = idx + delta;
-  if (newIdx < 0 || newIdx >= order.length) return;
+  var newIdx = Math.max(0, Math.min(order.length - 1, idx + delta));
+  if (newIdx === idx) return;
   order.splice(idx, 1);
   order.splice(newIdx, 0, id);
-  setStrengthOrder(order);
+  reorderLastMoved = id;
   renderReorderList();
 }
 
 function reorderItemBeforeTarget(draggedId, targetId) {
-  var order = getStrengthOrder();
+  var order = reorderWorking || (reorderWorking = getStrengthOrder().slice());
   var dIdx = order.indexOf(draggedId);
-  var tIdx = order.indexOf(targetId);
-  if (dIdx < 0 || tIdx < 0) return;
+  if (dIdx < 0 || order.indexOf(targetId) < 0) return;
   order.splice(dIdx, 1);
-  // If we removed from before the target, target index shifts down by 1
-  var insertAt = order.indexOf(targetId);
-  order.splice(insertAt, 0, draggedId);
-  setStrengthOrder(order);
+  order.splice(order.indexOf(targetId), 0, draggedId);
+  reorderLastMoved = draggedId;
   renderReorderList();
 }
 
+// Done: save and apply
 function saveReorder() {
-  // Order already saved on each move; this just closes the modal
-  // and applies the order to the page
+  if (reorderWorking) setStrengthOrder(reorderWorking);
+  reorderWorking = null;
   applyStrengthOrder();
-  closeReorderModal();
-  showToast('✓ Order saved');
+  document.getElementById('reorderModal').classList.add('hidden');
+  showToast('✓ Machine order saved');
 }
 
+// Reset: back to the roadmap's order (still needs Done to keep it)
 function resetReorderToDefault() {
-  if (!confirm('Reset exercise order to default?')) return;
-  try { localStorage.removeItem(STRENGTH_ORDER_KEY); } catch(e) {}
+  reorderWorking = getDefaultStrengthOrder();
+  reorderLastMoved = null;
   renderReorderList();
-  showToast('✓ Order reset');
 }
 
 // ═══════════════════════════════════════════════════════════════════════

@@ -14,6 +14,7 @@ My fitness tracker for Carilion Workouts.
 2. Check the plan card at the top. It shows the current roadmap week, phase, and that week's note.
 3. Each strength machine is already filled in with two sets at this week's planned weights. Adjust the weight or reps to what you actually did.
 4. Tap the round set number when you finish a set; it turns into a ✓. Only completed sets count in your history.
+   To change the order of the machines, tap **↕ Change order** in the Strength heading.
 5. Tap **+ Add Set** for an extra set; it copies the set above it.
 6. Tap **💾 Save Workout** in the bar at the bottom of the screen.
 
@@ -35,6 +36,15 @@ All data lives in local storage on the device that recorded it. On iPhone, open 
 ---
 
 ## Changelog
+
+### Version 5.1 — October 22, 2026: Easier machine reordering
+
+- The Strength heading now has a visible **↕ Change order** button (it was a small text link before). The Machines panel has the same option.
+- New **⤒** button sends a machine straight to the top, alongside ▲ and ▼ for one place at a time.
+- Each machine shows its position number, and the one just moved stays highlighted and on screen.
+- **Cancel** now discards changes; before, every tap was saved immediately. **Done** saves the new order.
+- "Reset to roadmap order" previews the roadmap's order and is kept only if you tap Done.
+- Instructions match the device: arrows on iPhone, drag handles plus arrows with a mouse or trackpad.
 
 ### Version 5 — October 22, 2026: Done tracking, move-up guidance, data safety
 
