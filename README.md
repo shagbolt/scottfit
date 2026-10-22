@@ -13,14 +13,17 @@ My fitness tracker for Carilion Workouts.
 1. Open the link in Safari on the iPhone (or use the Home Screen shortcut).
 2. Check the plan card at the top. It shows the current roadmap week, phase, and that week's note.
 3. Each strength machine is already filled in with two sets at this week's planned weights. Adjust the weight or reps to what you actually did.
-4. Tap **+ Add Set** for an extra set; it copies the set above it.
-5. Tap **💾 Save Workout** in the bar at the bottom of the screen.
+4. Tap the round set number when you finish a set; it turns into a ✓. Only completed sets count in your history.
+5. Tap **+ Add Set** for an extra set; it copies the set above it.
+6. Tap **💾 Save Workout** in the bar at the bottom of the screen.
+
+Watch for a green **Ready to move up** box on a machine. It appears when you've earned an increase under the roadmap's two-session rule, with a button to set the new weight.
 
 When the roadmap spreadsheet is revised, load the new file from **⇅ Data → Load roadmap (.xlsx)**. No code changes are needed.
 
 ## Backing up
 
-All data lives in Safari's local storage on the device that recorded it. Use **⇅ Data → Export JSON backup** regularly. A JSON backup restores everything: workouts, custom machines, machine settings, exercise order, and any loaded roadmap. CSV export is for spreadsheets.
+All data lives in local storage on the device that recorded it. On iPhone, open Scott.Fit from its **Home Screen icon**, not a Safari tab: Safari can clear a website's data after about a week without a visit, while Home Screen apps keep theirs. The two also keep separate storage, so move data between them with a backup. The app reminds you to back up every two weeks. You can also use **⇅ Data → Export JSON backup** anytime; on iPhone, choose **Save to Files** in the share sheet. A JSON backup restores everything: workouts, custom machines, machine settings, exercise order, and any loaded roadmap. CSV export is for spreadsheets.
 
 ## Files
 
@@ -32,6 +35,30 @@ All data lives in Safari's local storage on the device that recorded it. Use **�
 ---
 
 ## Changelog
+
+### Version 5 — October 22, 2026: Done tracking, move-up guidance, data safety
+
+**Mark sets done**
+- The set number on each row is now a large tap target. Tap it when the set is finished and it becomes a ✓; tap again to undo.
+- Each card header shows its progress (for example "1/2"), and a ✓ appears after the machine name when every set is done.
+- The bottom bar shows the whole workout's progress, for example "9 of 15 sets done."
+- History, progress charts, CSV exports, the "↑" last-weight hints, and weight pre-fills count only completed sets. Workouts saved before this version have no done marks and still count in full.
+- Saving with nothing marked done asks whether to mark every set done first.
+- **⎘ Copy Last** brings in the previous workout's weights with every set unmarked.
+
+**Ready to move up** (the roadmap's two-session rule)
+- When the top of the rep range is reached on every planned set in the last two workouts at the same weight, the machine shows a green **Ready to move up** box and a ▲ beside its name. Its button sets each set 5 lb higher (never above the roadmap's target ceiling).
+- When the roadmap raises the weight this week but the rule hasn't been met yet, an amber box suggests staying at the current weight, with a button to do that.
+- When the top of the range was reached once, it notes that one more workout at that weight qualifies.
+- At the target ceiling (the highest weight the roadmap reaches for that machine), it says to hold the weight.
+- No advice is shown during Rebuild, Deload, Return, or Recovery weeks, when the roadmap sets the weights on purpose.
+
+**Data safety**
+- On iPhone in a Safari tab, a notice explains how to move to a Home Screen app safely: export a backup, add to Home Screen, then import the backup there. It can be postponed for a week.
+- A backup reminder appears when there has never been a backup, or when the last one is over two weeks old and newer workouts exist. It can be postponed three days.
+- On iPhone, exports open the share sheet (Save to Files, Mail, AirDrop). This works in Home Screen apps, where ordinary downloads are unreliable.
+- The app asks the browser to keep its storage permanently where that is supported.
+- Fixed: downloads could fail in Safari because the file link was released too quickly.
 
 ### Version 4 — October 21, 2026: Roadmap-driven workouts
 
@@ -51,7 +78,8 @@ All data lives in Safari's local storage on the device that recorded it. Use **�
 - Shoulder Press and Hip Abduction are now built-in machines.
 - Default exercise order follows the roadmap: Chest Press, Leg Press, Leg Curl, Leg Extension, Hip Abduction, Row, Shoulder Press. The ↕ reorder button still overrides it.
 - **+ Add Set** now copies the previous set's weight and reps instead of a generic default.
-- Removed the Stretches section. Balance and the cool-down lap remain.
+- Removed the Balance section (SLB, Tandem, Side Stepper, Grapevine).
+- Stretches trimmed to three: Cross Arm, Figure 4, and Hamstring (Touch Toes removed). The cool-down lap remains.
 
 **Data migration (automatic, one time)**
 - Custom machines named "Shoulder Press" or "Hip Abduction" are merged into the new built-ins, keeping their history, notes, settings, and position in the exercise order.
@@ -63,6 +91,7 @@ All data lives in Safari's local storage on the device that recorded it. Use **�
 - Custom machine cards could be duplicated after editing; fixed.
 - A leftover unsaved draft from an earlier day now asks whether to finish it or start fresh, instead of reloading silently.
 - The "saved" badge now reflects the selected date, not just today.
+- Reopening the app after saving today's workout now shows that workout, instead of a fresh form that could overwrite it on the next save.
 - The full CSV export was missing its "Notes" column header; exercise names are now quoted.
 - The "↑" last-weight hint now compares against the most recent workout *before* the selected date.
 - Exercise cards and chart tabs are now generated from one configuration list instead of several hard-coded copies.
@@ -116,6 +145,8 @@ All data lives in Safari's local storage on the device that recorded it. Use **�
 ## Technical notes
 
 - Plain HTML, CSS, and JavaScript in one file. Chart.js 4.4.1 is loaded from cdnjs; SheetJS 0.18.5 is loaded only when a roadmap spreadsheet is imported.
-- Local storage keys: `scottfit_v3_sessions`, `scottfit_v3_draft`, `scottfit_v3_machines`, `scottfit_v3_builtin_settings`, `scottfit_v3_strength_order`, `scottfit_v3_roadmap`, `scottfit_theme`.
+- Local storage keys: `scottfit_v3_sessions`, `scottfit_v3_draft`, `scottfit_v3_machines`, `scottfit_v3_builtin_settings`, `scottfit_v3_strength_order`, `scottfit_v3_roadmap`, `scottfit_v3_last_backup`, `scottfit_v3_notice_snooze`, `scottfit_theme`.
+- Each saved set is `{weight, reps, done}`. Sets without a `done` field (saved before Version 5) count as completed.
+- Move-up rule: the last two workouts at the same weight must reach the top of every planned set's rep range. Increases are 5 lb, capped at the highest weight the roadmap reaches for that lift.
 - The roadmap importer reads the "Weekly Roadmap" sheet. It expects a header row starting with "Week" that includes "Phase", lift names above "Set 1 / Set 2" columns, month rows such as "June 2026", and numbered week rows.
 - Safari reminders: every `<button>` needs `type="button"`; avoid raw line breaks inside JavaScript strings; keep input text at 16 px or larger.
