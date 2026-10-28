@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Scott.Fit — Walk Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ─────────────────────────────────────────────────────── */
+:root {
+  --burgundy:   #6B1F2A;
+  --burgundy-d: #4A1420;
+  --burgundy-l: #8B3040;
+  --cream:      #F8F2E8;
+  --cream-d:    #EDE3D0;
+  --tan:        #C8B89A;
+  --tan-l:      #DDD0B8;
+  --ink:        #1C1008;
+  --mid:        #5A4030;
+  --muted:      #8A7060;
+  --white:      #FDFAF5;
+  --border:     rgba(107,31,42,0.15);
+  --border-l:   rgba(107,31,42,0.08);
+  --shadow:     0 2px 12px rgba(28,16,8,0.10);
+  --r:          8px;
+
+  /* heart-rate zones */
+  --zone-rest:    #8BA8C4;
+  --zone-easy:    #6BAD6B;
+  --zone-fat:     #C4A63A;
+  --zone-cardio:  #C47A3A;
+  --zone-peak:    #B83A3A;
+}
+
+/* ── RESET ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  font-family: 'EB Garamond', Georgia, serif;
+  background: var(--cream);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.55;
+  min-height: 100%;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* ── HEADER ──────────────────────────────────────────────────────── */
+header {
+  background: var(--burgundy);
+  color: var(--cream);
+  padding: 16px 20px 12px;
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.app-title {
+  font-family: 'Cormorant SC', serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+.app-sub {
+  font-size: 12px;
+  color: var(--tan-l);
+  font-style: italic;
+  letter-spacing: 0.3px;
+}
+.header-right { text-align: right; }
+
+/* ── NAV TABS ────────────────────────────────────────────────────── */
+nav {
+  background: var(--burgundy-d);
+  display: flex;
+  border-bottom: 2px solid var(--burgundy-l);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+nav button {
+  flex: 1;
+  min-width: 80px;
+  padding: 10px 6px;
+  background: none;
+  border: none;
+  color: var(--tan-l);
+  font-family: 'Cormorant SC', serif;
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+nav button.active {
+  color: var(--cream);
+  border-bottom-color: var(--tan);
+}
+nav button:hover:not(.active) { color: var(--cream-d); }
+
+/* ── PANELS ──────────────────────────────────────────────────────── */
+.panel { display: none; padding: 16px; max-width: 640px; margin: 0 auto; }
+.panel.active { display: block; }
+
+/* ── CARD ────────────────────────────────────────────────────────── */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  font-family: 'Cormorant SC', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--burgundy);
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-l);
+  padding-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ── FORM ────────────────────────────────────────────────────────── */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.form-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+.form-row.single { grid-template-columns: 1fr; }
+label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+input[type=text], input[type=date], input[type=number], input[type=time], select, textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 15px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--burgundy);
+  background: var(--white);
+}
+textarea { resize: vertical; min-height: 60px; }
+
+/* ── BUTTONS ─────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Cormorant SC', serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--burgundy); color: var(--cream); }
+.btn-primary:hover { background: var(--burgundy-l); }
+.btn-secondary { background: var(--cream-d); color: var(--burgundy); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--tan-l); }
+.btn-danger { background: #C04040; color: white; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* ── STAT TILES ──────────────────────────────────────────────────── */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.tile {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px 10px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.tile-val {
+  font-family: 'Cormorant SC', serif;
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--burgundy);
+  line-height: 1;
+}
+.tile-unit {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.tile-label {
+  font-size: 11px;
+  color: var(--mid);
+  margin-top: 4px;
+  letter-spacing: 0.3px;
+}
+
+/* ── WALK LIST ───────────────────────────────────────────────────── */
+.walk-item {
+  border-bottom: 1px solid var(--border-l);
+  padding: 10px 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: start;
+}
+.walk-item:last-child { border-bottom: none; }
+.walk-date-box {
+  text-align: center;
+  background: var(--cream-d);
+  border-radius: 5px;
+  padding: 4px 8px;
+  min-width: 46px;
+}
+.walk-date-mon { font-size: 10px; color: var(--burgundy); font-weight: 600; letter-spacing: 0.5px; }
+.walk-date-day { font-size: 20px; font-family: 'Cormorant SC', serif; color: var(--ink); line-height: 1; }
+.walk-main { flex: 1; }
+.walk-title { font-weight: 500; font-size: 15px; }
+.walk-meta { font-size: 13px; color: var(--mid); line-height: 1.8; }
+.walk-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+.chip {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-family: 'EB Garamond', serif;
+}
+.chip-dist { background: #E8EEF8; color: #2A4080; }
+.chip-time { background: #EAF3EA; color: #2A5030; }
+.chip-pace { background: #F3EAF0; color: #501840; }
+.chip-hr   { background: #F3EDE0; color: #5A3800; }
+.chip-cal  { background: #EAEEF0; color: #204050; }
+.walk-actions { display: flex; gap: 4px; padding-top: 2px; }
+.icon-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: 16px; padding: 2px 4px;
+  border-radius: 4px; line-height: 1;
+}
+.icon-btn:hover { color: var(--burgundy); background: var(--cream-d); }
+
+/* ── CHART ───────────────────────────────────────────────────────── */
+.chart-wrap { overflow-x: auto; }
+svg.chart { display: block; width: 100%; min-width: 280px; }
+.chart-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--mid); }
+.legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── HR ZONE BAR ────────────────────────────────────────────────── */
+.hr-zone-bar {
+  height: 8px; border-radius: 4px; margin: 8px 0 4px;
+  background: linear-gradient(to right,
+    var(--zone-rest) 0% 20%,
+    var(--zone-easy) 20% 40%,
+    var(--zone-fat)  40% 60%,
+    var(--zone-cardio) 60% 80%,
+    var(--zone-peak) 80% 100%);
+  position: relative;
+}
+.hr-marker {
+  position: absolute; top: -3px;
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid white;
+  transform: translateX(-50%);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* ── PROGRESS BAR ────────────────────────────────────────────────── */
+.progress-wrap { margin: 6px 0; }
+.progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--mid); margin-bottom: 3px; }
+.progress-track {
+  height: 7px; background: var(--cream-d); border-radius: 4px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 4px; background: var(--burgundy);
+  transition: width 0.4s ease;
+}
+
+/* ── IMPORT ZONE ─────────────────────────────────────────────────── */
+.drop-zone {
+  border: 2px dashed var(--tan);
+  border-radius: var(--r);
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 12px;
+}
+.drop-zone.drag-over { border-color: var(--burgundy); background: var(--cream-d); }
+.drop-zone p { font-size: 14px; margin-top: 6px; }
+.import-result {
+  font-size: 13px; color: var(--mid);
+  background: var(--cream-d); border-radius: 5px;
+  padding: 8px 12px; margin-top: 8px;
+  display: none;
+}
+
+/* ── TOAST ───────────────────────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--burgundy-d); color: var(--cream);
+  padding: 10px 20px; border-radius: 20px;
+  font-size: 14px; font-family: 'Cormorant SC', serif; font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  opacity: 0; pointer-events: none; z-index: 100;
+  white-space: nowrap;
+}
+#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ── MISC ────────────────────────────────────────────────────────── */
+.section-gap { margin-top: 20px; }
+.empty-state { text-align: center; color: var(--muted); padding: 32px 0; font-style: italic; }
+.goal-row { display: flex; justify-content: space-between; align-items: center; }
+.divider { border: none; border-top: 1px solid var(--border-l); margin: 12px 0; }
+.tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.tag {
+  font-size: 12px; padding: 3px 9px; border-radius: 10px; cursor: pointer;
+  background: var(--cream-d); color: var(--mid); border: 1px solid var(--border);
+  transition: background 0.15s;
+  font-family: 'EB Garamond', serif;
+}
+.tag.selected { background: var(--burgundy); color: var(--cream); border-color: var(--burgundy); }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cream: #1E1510; --cream-d: #2A1E16; --white: #251A12;
+    --tan: #8A7050; --tan-l: #AA9070; --border: rgba(200,160,100,0.2);
+    --border-l: rgba(200,160,100,0.1); --ink: #F0E8DC; --mid: #C0A888;
+    --muted: #907060;
+  }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="app-title">Scott.Fit</div>
+    <div class="app-sub">Walk Tracker</div>
+  </div>
+  <div class="header-right" style="font-size:12px;color:var(--tan-l);font-style:italic;">
+    Target: 120–130 bpm<br>Goal: 4–5 mi by May '27
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('log')">Log Walk</button>
+  <button onclick="showTab('history')">History</button>
+  <button onclick="showTab('charts')">Charts</button>
+  <button onclick="showTab('import')">Import</button>
+  <button onclick="showTab('goals')">Goals</button>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- LOG TAB                                               -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="tab-log" class="panel active">
+
+  <div class="card">
+    <div class="card-title">Log a Walk</div>
+
+    <div class="form-row">
+      <div>
+        <label>Date</label>
+        <input type="date" id="inp-date">
+      </div>
+      <div>
+        <label>Route / Location</label>
+        <input type="text" id="inp-route" placeholder="Greenway, treadmill, mall…">
+      </div>
+    </div>
+
+    <div class="form-row triple">
+      <div>
+        <label>Distance (mi)</label>
+        <input type="number" id="inp-dist" step="0.01" min="0" placeholder="2.00">
+      </div>
+      <div>
+        <label>Duration (min)</label>
+        <input type="number" id="inp-dur" step="1" min="0" placeholder="45">
+      </div>
+      <div>
+        <label>Pace (auto)</label>
+        <input type="text" id="inp-pace" readonly placeholder="— min/mi" style="color:var(--muted)">
+      </div>
+    </div>
+
+    <div class="form-row triple">
+      <div>
+        <label>Avg Heart Rate</label>
+        <input type="number" id="inp-hr-avg" step="1" min="50" max="220" placeholder="122">
+      </div>
+      <div>
+        <label>Peak Heart Rate</label>
+        <input type="number" id="inp-hr-peak" step="1" min="50" max="220" placeholder="134">
+      </div>
+      <div>
+        <label>Calories</label>
+        <input type="number" id="inp-cal" step="1" min="0" placeholder="210">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Feel</label>
+        <select id="inp-feel">
+          <option value="">— select —</option>
+          <option value="great">Great 💪</option>
+          <option value="good">Good 👍</option>
+          <option value="ok">OK 😐</option>
+          <option value="tired">Tired 😓</option>
+          <option value="tough">Tough 😤</option>
+        </select>
+      </div>
+      <div>
+        <label>Weather</label>
+        <select id="inp-weather">
+          <option value="">— select —</option>
+          <option value="sunny">Sunny ☀️</option>
+          <option value="cloudy">Cloudy ☁️</option>
+          <option value="rainy">Rainy 🌧</option>
+          <option value="snow">Snow ❄️</option>
+          <option value="treadmill">Treadmill 🏠</option>
+          <option value="hot">Hot 🥵</option>
+          <option value="cold">Cold 🥶</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row single">
+      <div>
+        <label>Notes</label>
+        <textarea id="inp-notes" placeholder="Any pain, highlights, observations…"></textarea>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveWalk()">Save Walk</button>
+      <button class="btn btn-secondary" onclick="clearForm()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Quick stats -->
+  <div class="card">
+    <div class="card-title">This Week</div>
+    <div class="tiles" id="week-tiles">
+      <div class="tile"><div class="tile-val" id="wk-walks">—</div><div class="tile-label">Walks</div></div>
+      <div class="tile"><div class="tile-val" id="wk-dist">—</div><div class="tile-unit">mi</div><div class="tile-label">Distance</div></div>
+      <div class="tile"><div class="tile-val" id="wk-hr">—</div><div class="tile-unit">bpm</div><div class="tile-label">Avg HR</div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Weekly distance</span><span id="wk-dist-label">0 / 6 mi</span></div>
+      <div class="progress-track"><div class="progress-fill" id="wk-dist-bar" style="width:0%"></div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Weekly walks</span><span id="wk-walks-label">0 / 3</span></div>
+      <div class="progress-track"><div class="progress-fill" id="wk-walks-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- HISTORY TAB                                           -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="tab-history" class="panel">
+  <div class="card">
+    <div class="card-title">
+      Walk History
+      <div style="display:flex;gap:6px;align-items:center;">
+        <select id="hist-filter" onchange="renderHistory()" style="font-size:12px;padding:4px 6px;">
+          <option value="all">All time</option>
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="7">This week</option>
+        </select>
+      </div>
+    </div>
+    <div id="history-list"><div class="empty-state">No walks logged yet.</div></div>
+  </div>
+
+  <!-- All-time stats -->
+  <div class="card">
+    <div class="card-title">All-Time Stats</div>
+    <div class="tiles">
+      <div class="tile"><div class="tile-val" id="at-walks">—</div><div class="tile-label">Total Walks</div></div>
+      <div class="tile"><div class="tile-val" id="at-dist">—</div><div class="tile-unit">mi</div><div class="tile-label">Total Dist</div></div>
+      <div class="tile"><div class="tile-val" id="at-hr">—</div><div class="tile-unit">bpm</div><div class="tile-label">Avg HR</div></div>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="tile-val" id="at-best">—</div><div class="tile-unit">mi</div><div class="tile-label">Best Walk</div></div>
+      <div class="tile"><div class="tile-val" id="at-pace">—</div><div class="tile-unit">min/mi</div><div class="tile-label">Best Pace</div></div>
+      <div class="tile"><div class="tile-val" id="at-streak">—</div><div class="tile-unit">wks</div><div class="tile-label">Streak</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- CHARTS TAB                                            -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="tab-charts" class="panel">
+
+  <div class="card">
+    <div class="card-title">Distance — Last 12 Weeks</div>
+    <div class="chart-wrap"><svg id="chart-dist" class="chart" height="160"></svg></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Heart Rate — Last 20 Walks</div>
+    <div class="chart-wrap"><svg id="chart-hr" class="chart" height="160"></svg></div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--zone-easy)"></div>Easy (&lt;110)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--zone-fat)"></div>Fat burn (110–119)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--zone-cardio)"></div>Target (120–130)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--zone-peak)"></div>High (&gt;130)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Pace Trend — Last 20 Walks</div>
+    <div class="chart-wrap"><svg id="chart-pace" class="chart" height="130"></svg></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;font-style:italic;">Lower = faster pace</div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- IMPORT TAB                                            -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="tab-import" class="panel">
+  <div class="card">
+    <div class="card-title">Import from Apple Health</div>
+
+    <p style="font-size:14px;color:var(--mid);margin-bottom:12px;line-height:1.6;">
+      Export your Apple Health data on your iPhone, then import the <strong>export.xml</strong> file here.
+      Only walking workouts are imported — all other data is ignored.
+    </p>
+
+    <details style="margin-bottom:14px;">
+      <summary style="cursor:pointer;font-size:13px;color:var(--burgundy);font-weight:500;">How to export from Apple Health →</summary>
+      <ol style="font-size:13px;color:var(--mid);line-height:2;margin:10px 0 0 16px;">
+        <li>Open the <strong>Health</strong> app on your iPhone</li>
+        <li>Tap your profile picture (top right)</li>
+        <li>Tap <strong>Export All Health Data</strong></li>
+        <li>Tap <strong>Export</strong> and wait (may take a minute)</li>
+        <li>Share the ZIP file to your Mac via AirDrop or Files</li>
+        <li>Unzip it — find <strong>apple_health_export/export.xml</strong></li>
+        <li>Drop that file into the box below</li>
+      </ol>
+    </details>
+
+    <div class="drop-zone" id="drop-zone"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="handleDrop(event)"
+      onclick="document.getElementById('file-input').click()">
+      <div style="font-size:32px;">📂</div>
+      <p>Drop <strong>export.xml</strong> here, or tap to browse</p>
+      <p style="font-size:12px;margin-top:4px;">File stays on your device — never uploaded anywhere</p>
+    </div>
+    <input type="file" id="file-input" accept=".xml" style="display:none" onchange="handleFile(this.files[0])">
+
+    <div class="import-result" id="import-result"></div>
+
+    <div style="margin-top:12px;">
+      <label style="font-size:12px;">Import mode</label>
+      <div style="display:flex;gap:10px;margin-top:4px;">
+        <label style="text-transform:none;font-size:14px;display:flex;align-items:center;gap:6px;">
+          <input type="radio" name="import-mode" value="merge" checked> Merge (skip duplicates)
+        </label>
+        <label style="text-transform:none;font-size:14px;display:flex;align-items:center;gap:6px;">
+          <input type="radio" name="import-mode" value="replace"> Replace all
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Export / Backup</div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="exportJSON()">📦 JSON Backup</button>
+      <button class="btn btn-secondary" onclick="exportCSV()">📊 CSV for Numbers</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('restore-input').click()">↩️ Restore Backup</button>
+    </div>
+    <input type="file" id="restore-input" accept=".json" style="display:none" onchange="restoreBackup(this)">
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- GOALS TAB                                             -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="tab-goals" class="panel">
+  <div class="card">
+    <div class="card-title">Weekly Goals</div>
+    <div class="form-row">
+      <div>
+        <label>Walks per week</label>
+        <input type="number" id="goal-walks" min="1" max="7" value="3">
+      </div>
+      <div>
+        <label>Miles per week</label>
+        <input type="number" id="goal-dist" step="0.5" min="1" value="6">
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Target HR low (bpm)</label>
+        <input type="number" id="goal-hr-lo" min="60" max="200" value="120">
+      </div>
+      <div>
+        <label>Target HR high (bpm)</label>
+        <input type="number" id="goal-hr-hi" min="60" max="220" value="130">
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveGoals()" style="margin-top:8px;">Save Goals</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Long-Term Target</div>
+    <div class="form-row">
+      <div>
+        <label>Target long walk (mi)</label>
+        <input type="number" id="goal-long" step="0.5" min="1" value="5">
+      </div>
+      <div>
+        <label>Target date</label>
+        <input type="date" id="goal-date" value="2027-05-30">
+      </div>
+    </div>
+    <div id="goal-progress-section" style="margin-top:12px;"></div>
+    <button class="btn btn-primary" onclick="saveGoals()" style="margin-top:8px;">Save Goals</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="color:#B83A3A;">Danger Zone</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Permanently delete all walk data. Cannot be undone.</p>
+    <button class="btn btn-danger btn-sm" onclick="clearAllData()">Delete All Data</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Edit modal -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;overflow-y:auto;">
+  <div style="background:var(--white);border-radius:var(--r);margin:20px auto;max-width:480px;padding:20px;">
+    <div class="card-title">Edit Walk <button onclick="closeEdit()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);">✕</button></div>
+    <div id="edit-form-body"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveEdit()">Save</button>
+      <button class="btn btn-secondary" onclick="closeEdit()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STORAGE KEY ───────────────────────────────────────────────────
+const STORE  = 'scottfit_walks_v1';
+const GSTORE = 'scottfit_walk_goals_v1';
+
+// ── DATA LAYER ────────────────────────────────────────────────────
+function loadWalks() {
+  try { return JSON.parse(localStorage.getItem(STORE) || '[]'); } catch { return []; }
+}
+function saveWalks(arr) {
+  localStorage.setItem(STORE, JSON.stringify(arr));
+}
+function loadGoals() {
+  try {
+    return JSON.parse(localStorage.getItem(GSTORE) || 'null') || {
+      walksPerWeek: 3, milesPerWeek: 6,
+      hrLo: 120, hrHi: 130,
+      longTarget: 5, targetDate: '2027-05-30'
+    };
+  } catch { return { walksPerWeek: 3, milesPerWeek: 6, hrLo: 120, hrHi: 130, longTarget: 5, targetDate: '2027-05-30' }; }
+}
+
+// ── TABS ──────────────────────────────────────────────────────────
+function showTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (id === 'history') renderHistory();
+  if (id === 'charts')  renderCharts();
+  if (id === 'goals')   renderGoals();
+  if (id === 'log')     renderWeekStats();
+}
+
+// ── FORM HELPERS ──────────────────────────────────────────────────
+function calcPace(dist, dur) {
+  if (!dist || !dur || dist <= 0) return '';
+  const mpm = dur / dist;
+  const min = Math.floor(mpm);
+  const sec = Math.round((mpm - min) * 60);
+  return `${min}:${sec.toString().padStart(2,'0')} /mi`;
+}
+
+document.getElementById('inp-dist').addEventListener('input', updatePace);
+document.getElementById('inp-dur').addEventListener('input', updatePace);
+function updatePace() {
+  const d = parseFloat(document.getElementById('inp-dist').value);
+  const t = parseFloat(document.getElementById('inp-dur').value);
+  document.getElementById('inp-pace').value = calcPace(d, t) || '— min/mi';
+}
+
+// Set today's date on load
+document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
+
+function clearForm() {
+  ['inp-route','inp-notes'].forEach(id => document.getElementById(id).value = '');
+  ['inp-dist','inp-dur','inp-hr-avg','inp-hr-peak','inp-cal'].forEach(id => document.getElementById(id).value = '');
+  ['inp-feel','inp-weather'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('inp-pace').value = '— min/mi';
+  document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
+}
+
+// ── SAVE WALK ─────────────────────────────────────────────────────
+function saveWalk(data) {
+  const w = data || {
+    id:      Date.now().toString(),
+    date:    document.getElementById('inp-date').value,
+    route:   document.getElementById('inp-route').value.trim(),
+    dist:    parseFloat(document.getElementById('inp-dist').value) || null,
+    dur:     parseFloat(document.getElementById('inp-dur').value) || null,
+    hrAvg:   parseInt(document.getElementById('inp-hr-avg').value) || null,
+    hrPeak:  parseInt(document.getElementById('inp-hr-peak').value) || null,
+    cal:     parseInt(document.getElementById('inp-cal').value) || null,
+    feel:    document.getElementById('inp-feel').value,
+    weather: document.getElementById('inp-weather').value,
+    notes:   document.getElementById('inp-notes').value.trim(),
+    source:  'manual',
+  };
+  if (w.dist && w.dur) w.pace = w.dur / w.dist;
+
+  if (!data) {
+    if (!w.date) { toast('Please enter a date'); return; }
+    if (!w.dist && !w.dur) { toast('Enter at least distance or duration'); return; }
+  }
+
+  const walks = loadWalks();
+  walks.push(w);
+  walks.sort((a, b) => b.date.localeCompare(a.date));
+  saveWalks(walks);
+  if (!data) { clearForm(); toast('Walk saved ✓'); }
+  renderWeekStats();
+  return w;
+}
+
+// ── WEEK STATS ────────────────────────────────────────────────────
+function renderWeekStats() {
+  const goals = loadGoals();
+  const walks = loadWalks();
+  const now   = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+  monday.setHours(0,0,0,0);
+
+  const thisWeek = walks.filter(w => new Date(w.date) >= monday);
+  const dist = thisWeek.reduce((s, w) => s + (w.dist || 0), 0);
+  const hrVals = thisWeek.filter(w => w.hrAvg).map(w => w.hrAvg);
+  const avgHR = hrVals.length ? Math.round(hrVals.reduce((a,b)=>a+b,0)/hrVals.length) : null;
+
+  document.getElementById('wk-walks').textContent = thisWeek.length;
+  document.getElementById('wk-dist').textContent  = dist.toFixed(1);
+  document.getElementById('wk-hr').textContent    = avgHR || '—';
+
+  const distPct  = Math.min(100, (dist / (goals.milesPerWeek || 6)) * 100);
+  const walksPct = Math.min(100, (thisWeek.length / (goals.walksPerWeek || 3)) * 100);
+  document.getElementById('wk-dist-bar').style.width  = distPct + '%';
+  document.getElementById('wk-walks-bar').style.width = walksPct + '%';
+  document.getElementById('wk-dist-label').textContent  = `${dist.toFixed(1)} / ${goals.milesPerWeek || 6} mi`;
+  document.getElementById('wk-walks-label').textContent = `${thisWeek.length} / ${goals.walksPerWeek || 3}`;
+}
+
+// ── HISTORY ───────────────────────────────────────────────────────
+function renderHistory() {
+  const filterVal = parseInt(document.getElementById('hist-filter').value) || 0;
+  let walks = loadWalks();
+  if (filterVal) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - filterVal);
+    walks = walks.filter(w => new Date(w.date) >= cutoff);
+  }
+
+  const list = document.getElementById('history-list');
+  if (!walks.length) {
+    list.innerHTML = '<div class="empty-state">No walks in this period.</div>';
+  } else {
+    list.innerHTML = walks.map(w => {
+      const d = new Date(w.date + 'T12:00:00');
+      const mon = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+      const day = d.getDate();
+      const chips = [
+        w.dist  ? `<span class="chip chip-dist">${w.dist.toFixed(2)} mi</span>` : '',
+        w.dur   ? `<span class="chip chip-time">${w.dur} min</span>` : '',
+        w.pace  ? `<span class="chip chip-pace">${fmtPace(w.pace)}</span>` : '',
+        w.hrAvg ? `<span class="chip chip-hr">♥ ${w.hrAvg}${w.hrPeak ? '/' + w.hrPeak : ''} bpm</span>` : '',
+        w.cal   ? `<span class="chip chip-cal">${w.cal} cal</span>` : '',
+      ].join('');
+      const feel = { great:'💪', good:'👍', ok:'😐', tired:'😓', tough:'😤' }[w.feel] || '';
+      const wx   = { sunny:'☀️', cloudy:'☁️', rainy:'🌧', snow:'❄️', treadmill:'🏠', hot:'🥵', cold:'🥶' }[w.weather] || '';
+      const src  = w.source === 'apple-health' ? ' <span style="font-size:10px;color:var(--muted)">⌚ AW</span>' : '';
+      return `<div class="walk-item">
+        <div class="walk-date-box"><div class="walk-date-mon">${mon}</div><div class="walk-date-day">${day}</div></div>
+        <div class="walk-main">
+          <div class="walk-title">${w.route || 'Walk'}${src} ${feel} ${wx}</div>
+          <div class="walk-chips">${chips}</div>
+          ${w.notes ? `<div class="walk-meta" style="margin-top:4px;font-style:italic;">"${w.notes}"</div>` : ''}
+        </div>
+        <div class="walk-actions">
+          <button class="icon-btn" onclick="editWalk('${w.id}')" title="Edit">✏️</button>
+          <button class="icon-btn" onclick="deleteWalk('${w.id}')" title="Delete">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // All-time stats
+  const all = loadWalks();
+  const allDist  = all.reduce((s, w) => s + (w.dist || 0), 0);
+  const allHR    = all.filter(w => w.hrAvg).map(w => w.hrAvg);
+  const avgAllHR = allHR.length ? Math.round(allHR.reduce((a,b)=>a+b,0)/allHR.length) : null;
+  const bestDist = all.length ? Math.max(...all.map(w => w.dist || 0)) : 0;
+  const paceWalks = all.filter(w => w.pace);
+  const bestPace = paceWalks.length ? Math.min(...paceWalks.map(w => w.pace)) : null;
+  const streak = calcStreak(all);
+
+  document.getElementById('at-walks').textContent = all.length;
+  document.getElementById('at-dist').textContent  = allDist.toFixed(1);
+  document.getElementById('at-hr').textContent    = avgAllHR || '—';
+  document.getElementById('at-best').textContent  = bestDist.toFixed(2);
+  document.getElementById('at-pace').textContent  = bestPace ? fmtPace(bestPace) : '—';
+  document.getElementById('at-streak').textContent = streak;
+}
+
+function calcStreak(walks) {
+  if (!walks.length) return 0;
+  // Count consecutive weeks with at least 1 walk
+  const weeks = new Set(walks.map(w => {
+    const d = new Date(w.date + 'T12:00:00');
+    const dayOfWeek = (d.getDay() + 6) % 7;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - dayOfWeek);
+    return monday.toISOString().slice(0, 10);
+  }));
+  const sorted = [...weeks].sort().reverse();
+  if (!sorted.length) return 0;
+  let streak = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const a = new Date(sorted[i-1]);
+    const b = new Date(sorted[i]);
+    const diff = (a - b) / (7 * 24 * 3600 * 1000);
+    if (Math.round(diff) === 1) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function fmtPace(mpm) {
+  const min = Math.floor(mpm);
+  const sec = Math.round((mpm - min) * 60);
+  return `${min}:${sec.toString().padStart(2,'0')}`;
+}
+
+// ── EDIT / DELETE ─────────────────────────────────────────────────
+let editingId = null;
+function editWalk(id) {
+  const walks = loadWalks();
+  const w = walks.find(x => x.id === id);
+  if (!w) return;
+  editingId = id;
+  document.getElementById('edit-form-body').innerHTML = `
+    <div class="form-row"><div><label>Date</label><input type="date" id="e-date" value="${w.date}"></div>
+    <div><label>Route</label><input type="text" id="e-route" value="${w.route || ''}"></div></div>
+    <div class="form-row triple">
+      <div><label>Distance (mi)</label><input type="number" id="e-dist" step="0.01" value="${w.dist || ''}"></div>
+      <div><label>Duration (min)</label><input type="number" id="e-dur" value="${w.dur || ''}"></div>
+      <div><label>Calories</label><input type="number" id="e-cal" value="${w.cal || ''}"></div>
+    </div>
+    <div class="form-row triple">
+      <div><label>Avg HR</label><input type="number" id="e-hr-avg" value="${w.hrAvg || ''}"></div>
+      <div><label>Peak HR</label><input type="number" id="e-hr-peak" value="${w.hrPeak || ''}"></div>
+      <div><label>Feel</label><select id="e-feel">
+        <option value="">—</option>
+        <option value="great" ${w.feel==='great'?'selected':''}>Great 💪</option>
+        <option value="good" ${w.feel==='good'?'selected':''}>Good 👍</option>
+        <option value="ok" ${w.feel==='ok'?'selected':''}>OK 😐</option>
+        <option value="tired" ${w.feel==='tired'?'selected':''}>Tired 😓</option>
+        <option value="tough" ${w.feel==='tough'?'selected':''}>Tough 😤</option>
+      </select></div>
+    </div>
+    <div class="form-row single"><div><label>Notes</label><textarea id="e-notes">${w.notes || ''}</textarea></div></div>`;
+  document.getElementById('edit-modal').style.display = 'block';
+}
+function saveEdit() {
+  const walks = loadWalks();
+  const idx = walks.findIndex(x => x.id === editingId);
+  if (idx === -1) return;
+  const w = walks[idx];
+  w.date   = document.getElementById('e-date').value;
+  w.route  = document.getElementById('e-route').value.trim();
+  w.dist   = parseFloat(document.getElementById('e-dist').value) || null;
+  w.dur    = parseFloat(document.getElementById('e-dur').value) || null;
+  w.hrAvg  = parseInt(document.getElementById('e-hr-avg').value) || null;
+  w.hrPeak = parseInt(document.getElementById('e-hr-peak').value) || null;
+  w.cal    = parseInt(document.getElementById('e-cal').value) || null;
+  w.feel   = document.getElementById('e-feel').value;
+  w.notes  = document.getElementById('e-notes').value.trim();
+  if (w.dist && w.dur) w.pace = w.dur / w.dist;
+  saveWalks(walks);
+  closeEdit();
+  renderHistory();
+  toast('Walk updated ✓');
+}
+function closeEdit() {
+  document.getElementById('edit-modal').style.display = 'none';
+  editingId = null;
+}
+function deleteWalk(id) {
+  if (!confirm('Delete this walk?')) return;
+  const walks = loadWalks().filter(w => w.id !== id);
+  saveWalks(walks);
+  renderHistory();
+  renderWeekStats();
+  toast('Walk deleted');
+}
+
+// ── CHARTS ───────────────────────────────────────────────────────
+function renderCharts() {
+  const walks = loadWalks();
+  renderDistChart(walks);
+  renderHRChart(walks);
+  renderPaceChart(walks);
+}
+
+function renderDistChart(walks) {
+  // Group by week (last 12 weeks)
+  const now = new Date();
+  const weeks = [];
+  for (let i = 11; i >= 0; i--) {
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7) - i * 7);
+    monday.setHours(0,0,0,0);
+    const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+    const label = monday.toLocaleString('en-US', { month: 'short', day: 'numeric' });
+    const total = walks
+      .filter(w => { const d = new Date(w.date+'T12:00:00'); return d >= monday && d <= sunday; })
+      .reduce((s, w) => s + (w.dist || 0), 0);
+    weeks.push({ label, total });
+  }
+  const goals = loadGoals();
+  const target = goals.milesPerWeek || 6;
+  const max = Math.max(target * 1.3, ...weeks.map(w => w.total), 0.1);
+
+  const svg = document.getElementById('chart-dist');
+  const W = svg.parentElement.offsetWidth || 320;
+  const H = 160; const pad = { t: 16, r: 8, b: 36, l: 32 };
+  const cw = W - pad.l - pad.r;
+  const ch = H - pad.t - pad.b;
+  const bw = Math.max(4, cw / weeks.length - 3);
+
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px">`;
+  // Grid & target line
+  const ty = pad.t + ch - (target / max) * ch;
+  s += `<line x1="${pad.l}" x2="${W-pad.r}" y1="${ty}" y2="${ty}" stroke="#C8B89A" stroke-dasharray="4,3" stroke-width="1"/>`;
+  s += `<text x="${W-pad.r}" y="${ty-3}" fill="#8A7060" font-size="10" text-anchor="end">goal</text>`;
+  // Y axis
+  [0, max/2, max].forEach(v => {
+    const y = pad.t + ch - (v / max) * ch;
+    s += `<text x="${pad.l - 4}" y="${y + 4}" fill="#8A7060" font-size="10" text-anchor="end">${v.toFixed(0)}</text>`;
+    s += `<line x1="${pad.l}" x2="${W-pad.r}" y1="${y}" y2="${y}" stroke="rgba(107,31,42,0.07)" stroke-width="1"/>`;
+  });
+  weeks.forEach((wk, i) => {
+    const x = pad.l + i * (cw / weeks.length) + (cw / weeks.length - bw) / 2;
+    const bh = (wk.total / max) * ch;
+    const y = pad.t + ch - bh;
+    const fill = wk.total >= target ? '#6B1F2A' : wk.total > 0 ? '#C8B89A' : 'rgba(107,31,42,0.1)';
+    s += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${Math.max(2, bh).toFixed(1)}" rx="2" fill="${fill}"/>`;
+    if (wk.total > 0) s += `<text x="${(x + bw/2).toFixed(1)}" y="${(y-3).toFixed(1)}" fill="#6B1F2A" font-size="9" text-anchor="middle">${wk.total.toFixed(1)}</text>`;
+    // X label every 3 weeks
+    if (i % 3 === 0) s += `<text x="${(x + bw/2).toFixed(1)}" y="${H - pad.b + 14}" fill="#8A7060" font-size="9" text-anchor="middle">${wk.label}</text>`;
+  });
+  s += '</svg>';
+  svg.outerHTML = s;
+}
+
+function renderHRChart(walks) {
+  const goals = loadGoals();
+  const recent = [...walks].filter(w => w.hrAvg).slice(0, 20).reverse();
+  const svg = document.getElementById('chart-hr');
+  const W = (svg.parentElement || document.body).offsetWidth || 320;
+  const H = 160; const pad = { t: 16, r: 8, b: 28, l: 38 };
+  const cw = W - pad.l - pad.r; const ch = H - pad.t - pad.b;
+
+  if (!recent.length) {
+    svg.outerHTML = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px"><text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#8A7060" font-size="13">No heart rate data yet</text></svg>`;
+    return;
+  }
+
+  const hrLo = goals.hrLo || 120; const hrHi = goals.hrHi || 130;
+  const allVals = recent.flatMap(w => [w.hrAvg, w.hrPeak].filter(Boolean));
+  const minHR = Math.max(60, Math.min(...allVals) - 10);
+  const maxHR = Math.min(200, Math.max(...allVals) + 10);
+  const range = maxHR - minHR || 1;
+
+  const y = v => pad.t + ch - ((v - minHR) / range) * ch;
+  const x = i => pad.l + i * (cw / (recent.length - 1 || 1));
+
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px">`;
+
+  // Target zone band
+  s += `<rect x="${pad.l}" y="${y(hrHi).toFixed(1)}" width="${cw}" height="${(y(hrLo) - y(hrHi)).toFixed(1)}" fill="rgba(107,31,42,0.08)" rx="0"/>`;
+  s += `<text x="${W-pad.r}" y="${y(hrHi)-2}" fill="#6B1F2A" font-size="9" text-anchor="end">${hrHi}</text>`;
+  s += `<text x="${W-pad.r}" y="${y(hrLo)+10}" fill="#6B1F2A" font-size="9" text-anchor="end">${hrLo}</text>`;
+
+  // Y labels
+  [minHR, Math.round((minHR+maxHR)/2), maxHR].forEach(v => {
+    s += `<text x="${pad.l-4}" y="${y(v)+4}" fill="#8A7060" font-size="10" text-anchor="end">${v}</text>`;
+    s += `<line x1="${pad.l}" x2="${W-pad.r}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(107,31,42,0.07)" stroke-width="1"/>`;
+  });
+
+  // Peak line (dotted)
+  const peakPts = recent.filter(w => w.hrPeak);
+  if (peakPts.length > 1) {
+    const pts = peakPts.map((w, i) => {
+      const idx = recent.indexOf(w);
+      return `${x(idx).toFixed(1)},${y(w.hrPeak).toFixed(1)}`;
+    }).join(' ');
+    s += `<polyline points="${pts}" fill="none" stroke="rgba(180,60,60,0.35)" stroke-width="1.5" stroke-dasharray="3,2"/>`;
+  }
+
+  // Avg line
+  const avgPts = recent.map((w, i) => `${x(i).toFixed(1)},${y(w.hrAvg).toFixed(1)}`).join(' ');
+  s += `<polyline points="${avgPts}" fill="none" stroke="#6B1F2A" stroke-width="2"/>`;
+
+  // Dots
+  recent.forEach((w, i) => {
+    const hr = w.hrAvg;
+    const fill = hr < 110 ? '#6BAD6B' : hr < 120 ? '#C4A63A' : hr <= 130 ? '#C47A3A' : '#B83A3A';
+    s += `<circle cx="${x(i).toFixed(1)}" cy="${y(hr).toFixed(1)}" r="4" fill="${fill}" stroke="white" stroke-width="1.5"/>`;
+  });
+
+  s += '</svg>';
+  svg.outerHTML = s;
+}
+
+function renderPaceChart(walks) {
+  const recent = [...walks].filter(w => w.pace).slice(0, 20).reverse();
+  const svg = document.getElementById('chart-pace');
+  const W = (svg.parentElement || document.body).offsetWidth || 320;
+  const H = 130; const pad = { t: 12, r: 8, b: 28, l: 42 };
+  const cw = W - pad.l - pad.r; const ch = H - pad.t - pad.b;
+
+  if (!recent.length) {
+    svg.outerHTML = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px"><text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#8A7060" font-size="13">No pace data yet</text></svg>`;
+    return;
+  }
+
+  const minP = Math.min(...recent.map(w => w.pace)) * 0.95;
+  const maxP = Math.max(...recent.map(w => w.pace)) * 1.05;
+  const range = maxP - minP || 1;
+  const y = v => pad.t + ((v - minP) / range) * ch; // inverted: lower pace = higher on chart
+  const x = i => pad.l + i * (cw / (recent.length - 1 || 1));
+
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px">`;
+
+  [minP, (minP+maxP)/2, maxP].forEach(v => {
+    s += `<text x="${pad.l-4}" y="${y(v)+4}" fill="#8A7060" font-size="9" text-anchor="end">${fmtPace(v)}</text>`;
+    s += `<line x1="${pad.l}" x2="${W-pad.r}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(107,31,42,0.07)"/>`;
+  });
+
+  const pts = recent.map((w, i) => `${x(i).toFixed(1)},${y(w.pace).toFixed(1)}`).join(' ');
+  s += `<polyline points="${pts}" fill="none" stroke="#C8B89A" stroke-width="2"/>`;
+  recent.forEach((w, i) => {
+    s += `<circle cx="${x(i).toFixed(1)}" cy="${y(w.pace).toFixed(1)}" r="3.5" fill="#6B1F2A" stroke="white" stroke-width="1.5"/>`;
+  });
+  s += '</svg>';
+  svg.outerHTML = s;
+}
+
+// ── APPLE HEALTH IMPORT ───────────────────────────────────────────
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+}
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => parseHealthXML(e.target.result);
+  reader.readAsText(file, 'UTF-8');
+}
+function parseHealthXML(xml) {
+  const result = document.getElementById('import-result');
+  result.style.display = 'block';
+  result.textContent = 'Parsing…';
+
+  let doc;
+  try {
+    doc = new DOMParser().parseFromString(xml, 'text/xml');
+  } catch(e) {
+    result.textContent = '✗ Could not parse file. Make sure it is export.xml from Apple Health.';
+    return;
+  }
+
+  const workouts = [...doc.querySelectorAll('Workout')].filter(w =>
+    w.getAttribute('workoutActivityType') === 'HKWorkoutActivityTypeWalking'
+  );
+
+  if (!workouts.length) {
+    result.textContent = '✗ No walking workouts found in this file.';
+    return;
+  }
+
+  const imported = workouts.map(w => {
+    const start = w.getAttribute('startDate') || '';
+    const dateStr = start.slice(0, 10);
+    const dist = parseFloat(w.getAttribute('totalDistance') || 0);
+    const dur  = parseFloat(w.getAttribute('duration') || 0);
+    const cal  = parseFloat(w.getAttribute('totalEnergyBurned') || 0);
+
+    const hrStat = w.querySelector('WorkoutStatistics[type="HKQuantityTypeIdentifierHeartRate"]');
+    const hrAvg  = hrStat ? Math.round(parseFloat(hrStat.getAttribute('average') || 0)) : null;
+    const hrPeak = hrStat ? Math.round(parseFloat(hrStat.getAttribute('maximum') || 0)) : null;
+
+    const walk = {
+      id:      `ah-${start.replace(/[^0-9]/g,'').slice(0,14)}`,
+      date:    dateStr,
+      route:   'Apple Watch walk',
+      dist:    dist > 0 ? +dist.toFixed(2) : null,
+      dur:     dur  > 0 ? +dur.toFixed(1)  : null,
+      hrAvg:   hrAvg  > 0 ? hrAvg  : null,
+      hrPeak:  hrPeak > 0 ? hrPeak : null,
+      cal:     cal   > 0 ? Math.round(cal) : null,
+      source:  'apple-health',
+    };
+    if (walk.dist && walk.dur) walk.pace = walk.dur / walk.dist;
+    return walk;
+  });
+
+  const mode = document.querySelector('input[name="import-mode"]:checked').value;
+  const existing = loadWalks();
+
+  let saved = 0;
+  if (mode === 'replace') {
+    saveWalks(imported.sort((a,b) => b.date.localeCompare(a.date)));
+    saved = imported.length;
+  } else {
+    const existingIds = new Set(existing.map(w => w.id));
+    const newOnes = imported.filter(w => !existingIds.has(w.id));
+    const merged = [...existing, ...newOnes].sort((a,b) => b.date.localeCompare(a.date));
+    saveWalks(merged);
+    saved = newOnes.length;
+  }
+
+  result.textContent = `✓ Found ${workouts.length} walking workouts. ${saved} imported (${imported.length - saved} already existed).`;
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  renderWeekStats();
+  toast(`${saved} walks imported ✓`);
+}
+
+// ── GOALS ─────────────────────────────────────────────────────────
+function renderGoals() {
+  const g = loadGoals();
+  document.getElementById('goal-walks').value  = g.walksPerWeek || 3;
+  document.getElementById('goal-dist').value   = g.milesPerWeek || 6;
+  document.getElementById('goal-hr-lo').value  = g.hrLo || 120;
+  document.getElementById('goal-hr-hi').value  = g.hrHi || 130;
+  document.getElementById('goal-long').value   = g.longTarget || 5;
+  document.getElementById('goal-date').value   = g.targetDate || '2027-05-30';
+
+  // Long-term progress
+  const walks = loadWalks();
+  const bestDist = walks.length ? Math.max(...walks.map(w => w.dist || 0)) : 0;
+  const pct = Math.min(100, (bestDist / (g.longTarget || 5)) * 100);
+  const daysLeft = g.targetDate ? Math.max(0, Math.round((new Date(g.targetDate) - new Date()) / 86400000)) : null;
+  document.getElementById('goal-progress-section').innerHTML = `
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Best walk: ${bestDist.toFixed(2)} mi</span>
+        <span>Target: ${g.longTarget || 5} mi by ${g.targetDate || 'May 2027'}</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
+    ${daysLeft !== null ? `<p style="font-size:12px;color:var(--muted);margin-top:6px;font-style:italic;">${daysLeft} days to target date</p>` : ''}`;
+}
+function saveGoals() {
+  const g = {
+    walksPerWeek: parseInt(document.getElementById('goal-walks').value) || 3,
+    milesPerWeek: parseFloat(document.getElementById('goal-dist').value) || 6,
+    hrLo: parseInt(document.getElementById('goal-hr-lo').value) || 120,
+    hrHi: parseInt(document.getElementById('goal-hr-hi').value) || 130,
+    longTarget: parseFloat(document.getElementById('goal-long').value) || 5,
+    targetDate: document.getElementById('goal-date').value,
+  };
+  localStorage.setItem(GSTORE, JSON.stringify(g));
+  toast('Goals saved ✓');
+  renderWeekStats();
+}
+
+// ── EXPORT / BACKUP ───────────────────────────────────────────────
+function exportJSON() {
+  const data = { walks: loadWalks(), goals: loadGoals(), exported: new Date().toISOString() };
+  downloadFile('scottfit-walks-backup.json', JSON.stringify(data, null, 2), 'application/json');
+  toast('Backup downloaded ✓');
+}
+function exportCSV() {
+  const walks = loadWalks();
+  const header = 'Date,Route,Distance (mi),Duration (min),Pace (min/mi),Avg HR,Peak HR,Calories,Feel,Weather,Notes,Source';
+  const rows = walks.map(w => [
+    w.date, `"${(w.route||'').replace(/"/g,'""')}"`,
+    w.dist||'', w.dur||'', w.pace ? fmtPace(w.pace) : '',
+    w.hrAvg||'', w.hrPeak||'', w.cal||'',
+    w.feel||'', w.weather||'',
+    `"${(w.notes||'').replace(/"/g,'""')}"`, w.source||'manual'
+  ].join(','));
+  downloadFile('scottfit-walks.csv', [header, ...rows].join('\n'), 'text/csv');
+  toast('CSV exported ✓');
+}
+function restoreBackup(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.walks) {
+        if (confirm(`Restore ${data.walks.length} walks? This will replace current data.`)) {
+          saveWalks(data.walks);
+          if (data.goals) localStorage.setItem(GSTORE, JSON.stringify(data.goals));
+          renderWeekStats();
+          toast('Backup restored ✓');
+        }
+      } else toast('Not a valid backup file');
+    } catch { toast('Could not read backup file'); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+function downloadFile(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function clearAllData() {
+  if (!confirm('Delete ALL walk data permanently? This cannot be undone.')) return;
+  localStorage.removeItem(STORE);
+  renderWeekStats();
+  renderHistory();
+  toast('All data cleared');
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+renderWeekStats();
+</script>
+</body>
+</html>
